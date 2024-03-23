@@ -3,44 +3,41 @@ package com.syrous.pacman
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import com.syrous.pacman.navigation.GameScreen
+import com.syrous.pacman.screen.GameStart
 import com.syrous.pacman.ui.theme.PacmanTheme
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var gameStart: GameStart
+
+    private val viewModel: GameViewModel by viewModels<MainViewModelImpl>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             PacmanTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Greeting("Android")
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    LoadScreens()
+                    val screen = viewModel.currentScreen.collectAsState().value
+                    when (screen) {
+                        GameScreen.START_SCREEN -> gameStart.Screen()
+                        GameScreen.GAME_PLAY -> TODO()
+                        GameScreen.GAME_OVER -> TODO()
+                    }
                 }
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    PacmanTheme {
-        Greeting("Android")
+    @Composable
+    private fun LoadScreens() {
+        gameStart = GameStart()
     }
 }
