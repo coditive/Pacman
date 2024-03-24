@@ -11,6 +11,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.syrous.pacman.navigation.GameScreen
 import com.syrous.pacman.screen.GamePlay
+import com.syrous.pacman.screen.GamePlayScreenAction
 import com.syrous.pacman.screen.GameStart
 import com.syrous.pacman.screen.StartScreenAction
 import com.syrous.pacman.ui.theme.PacmanTheme
@@ -42,11 +43,18 @@ class MainActivity : ComponentActivity() {
     @Composable
     private fun LoadScreens() {
         gameStart = GameStart { action ->
-            when(action) {
+            when (action) {
                 StartScreenAction.EndGame -> TODO()
-                StartScreenAction.StartGame -> TODO()
+                StartScreenAction.StartGame -> controller.startGame()
             }
         }
-        gamePlay = GamePlay(controller.gameState)
+        gamePlay = GamePlay(controller.gameState) { action ->
+            when (action) {
+                GamePlayScreenAction.MoveDown -> TODO()
+                GamePlayScreenAction.MoveLeft -> TODO()
+                GamePlayScreenAction.MoveRight -> TODO()
+                GamePlayScreenAction.MoveUp -> TODO()
+            }
+        }
     }
 }

@@ -16,7 +16,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
 
     override fun startGame() {
-        TODO("Not yet implemented")
+        currentScreen.value = GameScreen.GAME_PLAY
     }
 
     override fun pauseGame() {
