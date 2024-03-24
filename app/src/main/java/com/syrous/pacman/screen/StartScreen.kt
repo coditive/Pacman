@@ -9,7 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
-class GameStart {
+sealed class StartScreenAction {
+    data object StartGame : StartScreenAction()
+    data object EndGame : StartScreenAction()
+}
+
+class GameStart(private val performAction: (StartScreenAction) -> Unit) {
 
     @Composable
     fun Screen() {
@@ -18,11 +23,11 @@ class GameStart {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Button({ }) {
+            Button({ performAction(StartScreenAction.StartGame) }) {
                 Text("Start Game")
             }
 
-            Button(onClick = {}) {
+            Button(onClick = { performAction(StartScreenAction.EndGame) }) {
                 Text("End Game")
             }
         }

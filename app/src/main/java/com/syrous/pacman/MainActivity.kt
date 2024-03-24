@@ -10,15 +10,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.syrous.pacman.navigation.GameScreen
+import com.syrous.pacman.screen.GamePlay
 import com.syrous.pacman.screen.GameStart
+import com.syrous.pacman.screen.StartScreenAction
 import com.syrous.pacman.ui.theme.PacmanTheme
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var gameStart: GameStart
+    private lateinit var gamePlay: GamePlay
 
     private val viewModel: GameViewModel by viewModels<MainViewModelImpl>()
-
+    private val controller: GameController by viewModels<MainViewModelImpl>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -28,7 +31,7 @@ class MainActivity : ComponentActivity() {
                     val screen = viewModel.currentScreen.collectAsState().value
                     when (screen) {
                         GameScreen.START_SCREEN -> gameStart.Screen()
-                        GameScreen.GAME_PLAY -> TODO()
+                        GameScreen.GAME_PLAY -> gamePlay.Screen()
                         GameScreen.GAME_OVER -> TODO()
                     }
                 }
@@ -38,6 +41,12 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     private fun LoadScreens() {
-        gameStart = GameStart()
+        gameStart = GameStart { action ->
+            when(action) {
+                StartScreenAction.EndGame -> TODO()
+                StartScreenAction.StartGame -> TODO()
+            }
+        }
+        gamePlay = GamePlay(controller.gameState)
     }
 }
