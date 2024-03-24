@@ -9,6 +9,8 @@ class PacmanState {
     private var screenHeight = 0
 
     val pacman = MutableStateFlow(Pair(0, 0))
+    val wallList = MutableStateFlow<List<List<Pair<Int, Int>>>>(listOf())
+
 
     fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {

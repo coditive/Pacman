@@ -1,5 +1,14 @@
 package com.syrous.pacman.screen
 
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -12,20 +21,32 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.PacmanRadius
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
 import com.syrous.pacman.UnitScale
+import com.syrous.pacman.composables.PacmanPlayer
+import kotlin.math.cos
+import kotlin.math.sin
 
 
 sealed class GamePlayScreenAction {
@@ -45,16 +66,21 @@ class GamePlay(
     fun Screen() {
         Column(modifier = Modifier.fillMaxSize()) {
             val pacmanPosition = gameState.pacman.collectAsState().value
-            PacmanPlayer(
+
+            Layout(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.7f)
-                    .border(
-                        width = 1.dp,
-                        color = Color.Gray
-                    ),
-                position = pacmanPosition
-            )
+                    .fillMaxHeight(.7f)
+                    .border(1.dp, Color.Black),
+                content = {
+                    PacmanPlayer()
+                }
+            ) {measurables, constraints ->
+                val placeable = measurables.first().measure(constraints)
+                layout(placeable.width, placeable.height) {
+                    placeable.placeRelative(pacmanPosition.first + 90, pacmanPosition.second)
+                }
+            }
 
             PacmanController(
                 modifier = Modifier
@@ -65,24 +91,6 @@ class GamePlay(
         }
     }
 
-    @Composable
-    fun PacmanPlayer(modifier: Modifier = Modifier, position: Pair<Int, Int>) {
-        Canvas(modifier = modifier.onGloballyPositioned { layoutCoordinates ->
-            gameState.updateScreenDimensions(
-                layoutCoordinates.size.width / UnitScale,
-                layoutCoordinates.size.height / UnitScale
-            )
-        }) {
-            drawCircle(
-                color = Color.Yellow,
-                radius = PacmanRadius.dp.toPx(),
-                center = Offset(
-                    position.first * UnitScale.toFloat(),
-                    position.second * UnitScale.toFloat()
-                )
-            )
-        }
-    }
 
     @Composable
     fun PacmanController(
