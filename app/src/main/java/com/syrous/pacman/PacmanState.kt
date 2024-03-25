@@ -1,27 +1,13 @@
 package com.syrous.pacman
 
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
-class PacmanState {
+interface PacmanState {
 
+    val pacman: StateFlow<Pair<Int, Int>>
+    val wallList: StateFlow<List<Pair<Float, Float>>>
+    val foodList: StateFlow<List<Pair<Int, Int>>>
 
-    private var screenWidth = 0
-    private var screenHeight = 0
-
-    val pacman = MutableStateFlow(Pair(0, 0))
-    val wallList = MutableStateFlow<List<List<Pair<Int, Int>>>>(listOf())
-
-
-    fun updateScreenDimensions(width: Int, height: Int) {
-        if (width != screenWidth && height != screenHeight) {
-            screenWidth = width
-            screenHeight = height
-            initializePacman()
-        }
-    }
-
-    private fun initializePacman() {
-        pacman.value = screenWidth / 2 to screenHeight / 2
-    }
+    fun updateScreenDimensions(width: Int, height: Int)
 
 }

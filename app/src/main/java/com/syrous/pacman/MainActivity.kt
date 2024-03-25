@@ -18,11 +18,14 @@ import com.syrous.pacman.ui.theme.PacmanTheme
 
 class MainActivity : ComponentActivity() {
 
+    //Screens
     private lateinit var gameStart: GameStart
     private lateinit var gamePlay: GamePlay
 
+    //Controllers
     private val viewModel: GameViewModel by viewModels<MainViewModelImpl>()
     private val controller: GameController by viewModels<MainViewModelImpl>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
