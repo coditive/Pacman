@@ -9,8 +9,9 @@ class PacmanStateImpl : PacmanState {
     private var screenWidth = 0
     private var screenHeight = 0
 
-    override val pacman = MutableStateFlow(Pair(0, 0))
-    override val wallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
+    override val pacman = MutableStateFlow(Pair(0.0f, 0.0f))
+    override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
+    override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
 
     override fun updateScreenDimensions(width: Int, height: Int) {
@@ -25,15 +26,42 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun initializePacman() {
-        pacman.value = screenWidth / 2 to screenHeight / 2
+        pacman.value = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2
     }
 
     private fun initializeWall() {
-        wallList.value = buildList {
-            add(Pair(screenWidth * Screen_1_4, screenHeight * Screen_1_4))
-            add(Pair(screenWidth * Screen_3_4, screenHeight * Screen_1_4))
-            add(Pair(screenWidth * Screen_1_4, screenHeight * Screen_3_4))
-            add(Pair(screenWidth * Screen_3_4, screenHeight * Screen_3_4))
+        hWallList.value = buildList {
+            add(Pair(screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_1_4))
+            add(Pair(screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_1_4))
+            add(Pair(screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_3_4))
+            add(Pair(screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_3_4))
+        }
+
+        vWallList.value = buildList {
+            add(
+                Pair(
+                    hWallList.value[0].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
+                    hWallList.value[0].second
+                )
+            )
+            add(
+                Pair(
+                    hWallList.value[1].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
+                    hWallList.value[1].second
+                )
+            )
+            add(
+                Pair(
+                    hWallList.value[2].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
+                    hWallList.value[2].second - 5.5f
+                )
+            )
+            add(
+                Pair(
+                    hWallList.value[3].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
+                    hWallList.value[3].second - 5.5f
+                )
+            )
         }
     }
 

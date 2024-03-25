@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.syrous.pacman.PacmanRadius
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
+import com.syrous.pacman.SmallHeight
 import com.syrous.pacman.UnitScale
 import com.syrous.pacman.WallHeight
 import com.syrous.pacman.WallWidth
@@ -53,10 +54,11 @@ class GamePlay(
     fun Screen(modifier: Modifier = Modifier) {
         Scaffold(modifier = modifier.fillMaxSize()) { paddingValues ->
             val pacmanPosition = gameState.pacman.collectAsState().value
-            val wallList = gameState.wallList.collectAsState().value
+            val vWallList = gameState.vWallList.collectAsState().value
+            val hWallList = gameState.hWallList.collectAsState().value
             val foodList = gameState.foodList.collectAsState().value
 
-            Log.d("GamePlayScreen", "wallList -> $wallList")
+            Log.d("GamePlayScreen", "wallList -> $vWallList & $hWallList")
 
             PacmanPlayer(
                 modifier = Modifier
@@ -65,7 +67,8 @@ class GamePlay(
                     .border(width = 1.dp, color = Color.Gray)
                     .padding(paddingValues),
                 pacmanPosition = pacmanPosition,
-                wallList = wallList,
+                hWallList = hWallList,
+                vWallList = vWallList,
                 foodList = foodList
             )
 
@@ -84,8 +87,9 @@ class GamePlay(
     fun PacmanPlayer(
         modifier: Modifier = Modifier,
         animationDuration: Int = 500,
-        pacmanPosition: Pair<Int, Int>,
-        wallList: List<Pair<Float, Float>>,
+        pacmanPosition: Pair<Float, Float>,
+        hWallList: List<Pair<Float, Float>>,
+        vWallList: List<Pair<Float, Float>>,
         foodList: List<Pair<Int, Int>>
     ) {
 //        val cutAngle = 40f
@@ -118,24 +122,30 @@ class GamePlay(
                 )
             )
 
-            for (wall in wallList) {
-                drawWall(wall)
+            for (wall in hWallList) {
+                drawWall(wall, isVWall = false)
+            }
+
+            for (wall in vWallList) {
+                drawWall(wall, isVWall = true)
             }
         }
     }
 
-    private fun DrawScope.drawWall(position: Pair<Float, Float>) {
-        Log.d("GamePlayScreen", "position -> x->  ${position.first * UnitScale.toFloat()}, y -> ${position.second * UnitScale.toFloat()}")
-        val center = position
+    private fun DrawScope.drawWall(position: Pair<Float, Float>, isVWall: Boolean) {
+        Log.d(
+            "GamePlayScreen",
+            "position -> x->  ${position.first * UnitScale.toFloat()}, y -> ${position.second * UnitScale.toFloat()}, isVWall -> $isVWall"
+        )
         drawRect(
             color = Color.Black,
             topLeft = Offset(
-                center.first * UnitScale,
-                center.second * UnitScale
+                position.first * UnitScale,
+                position.second * UnitScale
             ),
             size = Size(
-                WallWidth * UnitScale.toFloat(),
-                WallHeight * UnitScale.toFloat()
+                if (isVWall) WallWidth * UnitScale.toFloat() else WallHeight * UnitScale.toFloat(),
+                if (isVWall) SmallHeight * UnitScale.toFloat() else WallWidth * UnitScale.toFloat()
             )
         )
     }
