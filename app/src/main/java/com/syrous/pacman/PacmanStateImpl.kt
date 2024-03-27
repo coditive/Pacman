@@ -25,6 +25,26 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
+    override fun moveUp() {
+        val newMove = pacman.value + Directions.UP.move
+        pacman.value = newMove
+    }
+
+    override fun moveDown() {
+        val newMove = pacman.value + Directions.DOWN.move
+        pacman.value = newMove
+    }
+
+    override fun moveLeft() {
+        val newMove = pacman.value + Directions.LEFT.move
+        pacman.value = newMove
+    }
+
+    override fun moveRight() {
+        val newMove = pacman.value + Directions.RIGHT.move
+        pacman.value = newMove
+    }
+
     private fun initializePacman() {
         pacman.value = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2
     }
@@ -38,30 +58,10 @@ class PacmanStateImpl : PacmanState {
         }
 
         vWallList.value = buildList {
-            add(
-                Pair(
-                    hWallList.value[0].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[0].second
-                )
-            )
-            add(
-                Pair(
-                    hWallList.value[1].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[1].second
-                )
-            )
-            add(
-                Pair(
-                    hWallList.value[2].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[2].second - 5.5f
-                )
-            )
-            add(
-                Pair(
-                    hWallList.value[3].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[3].second - 5.5f
-                )
-            )
+            add(Pair(hWallList.value[0].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[0].second))
+            add(Pair(hWallList.value[1].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[1].second))
+            add(Pair(hWallList.value[2].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[2].second - 5.5f))
+            add(Pair(hWallList.value[3].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[3].second - 5.5f))
         }
     }
 
@@ -78,4 +78,11 @@ class PacmanStateImpl : PacmanState {
         return Random.nextInt(screenWidth) to Random.nextInt(screenHeight)
     }
 
+}
+
+enum class Directions(val move: Pair<Float, Float>) {
+    LEFT(Pair(-1f, 0f)),
+    RIGHT(Pair(1f, 0f)),
+    UP(Pair(0f, -1f)),
+    DOWN(Pair(0f, 1f)),
 }

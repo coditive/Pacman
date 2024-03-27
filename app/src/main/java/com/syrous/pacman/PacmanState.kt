@@ -10,5 +10,9 @@ interface PacmanState {
     val foodList: StateFlow<List<Pair<Int, Int>>>
 
     fun updateScreenDimensions(width: Int, height: Int)
+    fun moveUp()
+    fun moveDown()
+    fun moveLeft()
+    fun moveRight()
 
 }

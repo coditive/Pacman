@@ -53,10 +53,10 @@ class MainActivity : ComponentActivity() {
         }
         gamePlay = GamePlay(controller.gameState) { action ->
             when (action) {
-                GamePlayScreenAction.MoveDown -> TODO()
-                GamePlayScreenAction.MoveLeft -> TODO()
-                GamePlayScreenAction.MoveRight -> TODO()
-                GamePlayScreenAction.MoveUp -> TODO()
+                GamePlayScreenAction.MoveDown -> controller.moveDown()
+                GamePlayScreenAction.MoveLeft -> controller.moveLeft()
+                GamePlayScreenAction.MoveRight -> controller.moveRight()
+                GamePlayScreenAction.MoveUp -> controller.moveUp()
             }
         }
     }

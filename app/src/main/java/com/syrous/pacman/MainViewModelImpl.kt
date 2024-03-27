@@ -11,6 +11,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
     override var gameState: PacmanState = PacmanStateImpl()
 
+
     override fun startGame() {
         currentScreen.value = GameScreen.GAME_PLAY
     }
@@ -28,19 +29,19 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     }
 
     override fun moveUp() {
-        TODO("Not yet implemented")
+        gameState.moveUp()
     }
 
     override fun moveLeft() {
-        TODO("Not yet implemented")
+        gameState.moveLeft()
     }
 
     override fun moveRight() {
-        TODO("Not yet implemented")
+        gameState.moveRight()
     }
 
     override fun moveDown() {
-        TODO("Not yet implemented")
+        gameState.moveDown()
     }
 
 }
