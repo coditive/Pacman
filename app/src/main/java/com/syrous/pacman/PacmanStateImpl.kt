@@ -9,7 +9,7 @@ class PacmanStateImpl : PacmanState {
     private var screenWidth = 0
     private var screenHeight = 0
 
-    override val pacman = MutableStateFlow(Pair(0.0f, 0.0f))
+    override val pacman = MutableStateFlow(Pacman(Pair(0f, 0f), Directions.RIGHT))
     override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
@@ -26,27 +26,25 @@ class PacmanStateImpl : PacmanState {
     }
 
     override fun moveUp() {
-        val newMove = pacman.value + Directions.UP.move
-        pacman.value = newMove
+        val newMove = pacman.value.position + Directions.UP.move
+        pacman.value = Pacman(newMove, Directions.UP)
     }
 
     override fun moveDown() {
-        val newMove = pacman.value + Directions.DOWN.move
-        pacman.value = newMove
-    }
+        val newMove = pacman.value.position + Directions.DOWN.move
+        pacman.value = Pacman(newMove, Directions.DOWN)    }
 
     override fun moveLeft() {
-        val newMove = pacman.value + Directions.LEFT.move
-        pacman.value = newMove
-    }
+        val newMove = pacman.value.position + Directions.LEFT.move
+        pacman.value = Pacman(newMove, Directions.LEFT)    }
 
     override fun moveRight() {
-        val newMove = pacman.value + Directions.RIGHT.move
-        pacman.value = newMove
-    }
+        val newMove = pacman.value.position + Directions.RIGHT.move
+        pacman.value = Pacman(newMove, Directions.RIGHT)    }
 
     private fun initializePacman() {
-        pacman.value = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2
+        pacman.value = Pacman(position = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2,
+            direction = Directions.RIGHT)
     }
 
     private fun initializeWall() {

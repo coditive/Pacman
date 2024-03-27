@@ -4,7 +4,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 interface PacmanState {
 
-    val pacman: StateFlow<Pair<Float, Float>>
+    val pacman: StateFlow<Pacman>
     val vWallList: StateFlow<List<Pair<Float, Float>>>
     val hWallList: StateFlow<List<Pair<Float, Float>>>
     val foodList: StateFlow<List<Pair<Int, Int>>>

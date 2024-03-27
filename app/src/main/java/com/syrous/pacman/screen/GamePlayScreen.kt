@@ -61,7 +61,7 @@ class GamePlay(
     @Composable
     fun Screen(modifier: Modifier = Modifier) {
         Scaffold(modifier = modifier.fillMaxSize()) { paddingValues ->
-            val pacmanPosition = gameState.pacman.collectAsState().value
+            val pacman = gameState.pacman.collectAsState().value
             val vWallList = gameState.vWallList.collectAsState().value
             val hWallList = gameState.hWallList.collectAsState().value
             val foodList = gameState.foodList.collectAsState().value
@@ -74,7 +74,7 @@ class GamePlay(
                     .fillMaxHeight(.7f)
                     .border(width = 1.dp, color = Color.Gray)
                     .padding(paddingValues),
-                pacmanPosition = pacmanPosition,
+                pacmanPosition = pacman.position,
                 hWallList = hWallList,
                 vWallList = vWallList,
                 foodList = foodList
