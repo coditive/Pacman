@@ -2,7 +2,7 @@ package com.syrous.pacman
 
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlin.random.Random
+import kotlin.random.Random.Default.nextInt
 
 class PacmanStateImpl : PacmanState {
 
@@ -69,15 +69,48 @@ class PacmanStateImpl : PacmanState {
         foodList.value = buildList {
             repeat(50) {
                 val food = generateFood()
-                add(food)
+                if (food != null) add(food)
             }
         }
     }
 
-    private fun generateFood(): Pair<Int, Int> {
-        return Random.nextInt(screenWidth) to Random.nextInt(screenHeight)
+    private fun checkDrawOnWall(
+        foodPoint: Pair<Int, Int>,
+        wallList: List<Pair<Float, Float>>
+    ): Boolean {
+        for (wall in wallList) {
+            if (foodPoint.first in wall.first.toInt() - FoodRadius.value.toInt() ..WallHeight + FoodRadius.value.toInt()
+                && foodPoint.second in wall.second.toInt() - FoodRadius.value.toInt()..WallWidth + FoodRadius.value.toInt()
+            ) return true
+        }
+        return false
     }
 
+    private fun checkDrawOnBoundary(foodPoint: Pair<Int, Int>): Boolean {
+        return foodPoint.first !in 1 until screenWidth - FoodRadius.value.toInt()
+                && foodPoint.second !in 1 until screenHeight - FoodRadius.value.toInt()
+    }
+
+    private fun checkDrawOnSelf(foodPoint: Pair<Int, Int>): Boolean {
+        for (food in foodList.value) {
+            if (foodPoint.first in food.first..food.first + FoodRadius.value.toInt()
+                || food.second in food.second..food.second + FoodRadius.value.toInt()
+            )
+                return true
+        }
+        return false
+    }
+
+    private fun generateFood(): Pair<Int, Int>? {
+        val randomPoint = nextInt(screenWidth) to nextInt(screenHeight)
+        return when {
+            checkDrawOnWall(randomPoint, hWallList.value) -> null
+            checkDrawOnWall(randomPoint, vWallList.value) -> null
+            checkDrawOnBoundary(randomPoint) -> null
+            checkDrawOnSelf(randomPoint) -> null
+            else -> randomPoint
+        }
+    }
 }
 
 enum class Directions(val move: Pair<Float, Float>) {
