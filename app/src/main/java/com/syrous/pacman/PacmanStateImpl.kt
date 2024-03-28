@@ -14,6 +14,7 @@ class PacmanStateImpl : PacmanState {
     override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
     override val score = MutableStateFlow(0)
+    override val enemies = MutableStateFlow<List<Enemy>>(listOf())
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
@@ -22,9 +23,95 @@ class PacmanStateImpl : PacmanState {
             Log.d("PacmanState", "width -> $screenWidth, height -> $screenHeight")
             initializePacman()
             initializeWall()
+            initializeEnemies()
             populateFood()
         }
     }
+
+    override fun updateEnemyPositionAfterLoop() {
+        for (enemy in enemies.value) {
+            when (enemy.enemyMode) {
+                EnemyModes.PATROLLING -> {
+                    enemyPatrollingRoute(enemy)
+                }
+
+                EnemyModes.CHASING -> {}
+                EnemyModes.FLEEING -> {}
+            }
+        }
+    }
+
+    private fun getOppositeDirection(directions: Directions): Directions {
+        return when (directions) {
+            Directions.LEFT -> Directions.RIGHT
+            Directions.RIGHT -> Directions.LEFT
+            Directions.UP -> Directions.DOWN
+            Directions.DOWN -> Directions.UP
+        }
+    }
+
+    private fun enemyPatrollingRoute(enemy: Enemy) {
+        val enemyList = enemies.value.toMutableList()
+        val moveDirection = when (enemy.direction) {
+            Directions.LEFT -> {
+                when {
+                    enemy.position.first < 2f && enemy.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                    enemy.position.first < 2f && enemy.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                    else -> Directions.LEFT
+                }
+            }
+
+            Directions.RIGHT -> {
+                when {
+                    enemy.position.first > screenWidth - 2f && enemy.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                    enemy.position.first > screenWidth - 2f && enemy.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                    else -> Directions.RIGHT
+                }
+            }
+            Directions.UP -> {
+                when {
+                    enemy.position.second < 2f && enemy.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                    enemy.position.second < 2f && enemy.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                    else -> Directions.UP
+                }
+            }
+
+            Directions.DOWN -> {
+                when {
+                    enemy.position.second > screenHeight - 2f && enemy.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                    enemy.position.second > screenHeight - 2f && enemy.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                    else -> Directions.DOWN
+                }
+            }
+        }
+        val newMove = enemy.position + moveDirection.move
+        enemyList.remove(enemy)
+        enemyList.add(
+            Enemy(
+                position = newMove,
+                direction = moveDirection,
+                imageId = enemy.imageId,
+                enemyMode = EnemyModes.PATROLLING
+            )
+        )
+        enemies.value = enemyList
+    }
+
+    private fun initializeEnemies() {
+        enemies.value = buildList {
+            repeat(NumberOfEnemies) {
+                add(
+                    Enemy(
+                        position = screenWidth * it.toFloat() to screenHeight * it.toFloat(),
+                        direction = if (it == 0) Directions.DOWN else Directions.UP,
+                        imageId = if (it == 0) R.drawable.ghost_red else R.drawable.ghost_orange,
+                        enemyMode = EnemyModes.PATROLLING
+                    )
+                )
+            }
+        }
+    }
+
 
     private fun canHaveFood(pacman: Pacman): Pair<Int, Int>? {
         for (food in foodList.value) {
@@ -39,9 +126,10 @@ class PacmanStateImpl : PacmanState {
     }
 
     override fun moveUp() {
-        val newMove =
-            Pacman(position = pacman.value.position + Directions.UP.move, direction = Directions.UP)
-        val canHaveFoodResult = canHaveFood(newMove)
+        val canHaveFoodResult = canHaveFood(pacman.value)
+        val newMove = Pacman(
+            position = pacman.value.position + Directions.UP.move, direction = Directions.UP
+        )
         when {
             canHaveFoodResult != null -> {
                 foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
@@ -55,11 +143,10 @@ class PacmanStateImpl : PacmanState {
     }
 
     override fun moveDown() {
+        val canHaveFoodResult = canHaveFood(pacman.value)
         val newMove = Pacman(
-            position = pacman.value.position + Directions.DOWN.move,
-            direction = Directions.DOWN
+            position = pacman.value.position + Directions.DOWN.move, direction = Directions.DOWN
         )
-        val canHaveFoodResult = canHaveFood(newMove)
         when {
             canHaveFoodResult != null -> {
                 foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
@@ -73,11 +160,10 @@ class PacmanStateImpl : PacmanState {
     }
 
     override fun moveLeft() {
+        val canHaveFoodResult = canHaveFood(pacman.value)
         val newMove = Pacman(
-            position = pacman.value.position + Directions.LEFT.move,
-            direction = Directions.LEFT
+            position = pacman.value.position + Directions.LEFT.move, direction = Directions.LEFT
         )
-        val canHaveFoodResult = canHaveFood(newMove)
         when {
             canHaveFoodResult != null -> {
                 foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
@@ -91,11 +177,10 @@ class PacmanStateImpl : PacmanState {
     }
 
     override fun moveRight() {
+        val canHaveFoodResult = canHaveFood(pacman.value)
         val newMove = Pacman(
-            position = pacman.value.position + Directions.RIGHT.move,
-            direction = Directions.RIGHT
+            position = pacman.value.position + Directions.RIGHT.move, direction = Directions.RIGHT
         )
-        val canHaveFoodResult = canHaveFood(newMove)
         when {
             canHaveFoodResult != null -> {
                 foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
@@ -181,28 +266,21 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun checkDrawOnWall(
-        foodPoint: Pair<Int, Int>,
-        wallList: List<Pair<Float, Float>>
+        foodPoint: Pair<Int, Int>, wallList: List<Pair<Float, Float>>
     ): Boolean {
         for (wall in wallList) {
-            if (foodPoint.first in wall.first.toInt() - FoodRadius.value.toInt()..WallHeight + FoodRadius.value.toInt()
-                && foodPoint.second in wall.second.toInt() - FoodRadius.value.toInt()..WallWidth + FoodRadius.value.toInt()
-            ) return true
+            if (foodPoint.first in wall.first.toInt() - FoodRadius.value.toInt()..WallHeight + FoodRadius.value.toInt() && foodPoint.second in wall.second.toInt() - FoodRadius.value.toInt()..WallWidth + FoodRadius.value.toInt()) return true
         }
         return false
     }
 
     private fun checkDrawOnBoundary(foodPoint: Pair<Int, Int>): Boolean {
-        return foodPoint.first !in 1 until screenWidth - FoodRadius.value.toInt()
-                && foodPoint.second !in 1 until screenHeight - FoodRadius.value.toInt()
+        return foodPoint.first !in 1 until screenWidth - FoodRadius.value.toInt() && foodPoint.second !in 1 until screenHeight - FoodRadius.value.toInt()
     }
 
     private fun checkDrawOnSelf(foodPoint: Pair<Int, Int>): Boolean {
         for (food in foodList.value) {
-            if (foodPoint.first in food.first..food.first + FoodRadius.value.toInt()
-                || food.second in food.second..food.second + FoodRadius.value.toInt()
-            )
-                return true
+            if (foodPoint.first in food.first..food.first + FoodRadius.value.toInt() || food.second in food.second..food.second + FoodRadius.value.toInt()) return true
         }
         return false
     }
@@ -220,8 +298,9 @@ class PacmanStateImpl : PacmanState {
 }
 
 enum class Directions(val move: Pair<Float, Float>) {
-    LEFT(Pair(-1f, 0f)),
-    RIGHT(Pair(1f, 0f)),
-    UP(Pair(0f, -1f)),
-    DOWN(Pair(0f, 1f)),
+    LEFT(Pair(-1f, 0f)), RIGHT(Pair(1f, 0f)), UP(Pair(0f, -1f)), DOWN(Pair(0f, 1f)),
+}
+
+enum class EnemyModes {
+    PATROLLING, CHASING, FLEEING
 }

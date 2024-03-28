@@ -1,12 +1,6 @@
 package com.syrous.pacman.screen
 
 import android.util.Log
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -25,8 +19,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -37,6 +29,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.syrous.pacman.Enemy
 import com.syrous.pacman.PacmanRadius
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
@@ -72,6 +65,7 @@ class GamePlay(
             val vWallList = gameState.vWallList.collectAsState().value
             val hWallList = gameState.hWallList.collectAsState().value
             val foodList = gameState.foodList.collectAsState().value
+            val enemies = gameState.enemies.collectAsState().value
 
             Log.d("GamePlayScreen", "wallList -> $vWallList & $hWallList")
 
@@ -84,7 +78,8 @@ class GamePlay(
                 pacmanPosition = pacman.position,
                 hWallList = hWallList,
                 vWallList = vWallList,
-                foodList = foodList
+                foodList = foodList,
+                enemies = enemies
             )
 
             PacmanController(
@@ -105,7 +100,8 @@ class GamePlay(
         pacmanPosition: Pair<Float, Float>,
         hWallList: List<Pair<Float, Float>>,
         vWallList: List<Pair<Float, Float>>,
-        foodList: List<Pair<Int, Int>>
+        foodList: List<Pair<Int, Int>>,
+        enemies: List<Enemy>
     ) {
 //        val cutAngle = 40f
 //        val transitionSpec = remember {
@@ -134,7 +130,7 @@ class GamePlay(
                 )
             }) {
             drawCircleWithCutout(
-                PacmanRadius.dp, animatedCutAngle = 320f, Offset(
+                PacmanRadius.dp, animatedCutAngle = 310f, Offset(
                     pacmanPosition.first * UnitScale.toFloat(),
                     pacmanPosition.second * UnitScale.toFloat()
                 )
@@ -146,6 +142,9 @@ class GamePlay(
 
             for (wall in vWallList) {
                 drawWall(wall, isVWall = true)
+            }
+            for (enemy in enemies) {
+                drawEnemy(enemy)
             }
 
             for (food in foodList) {
@@ -159,6 +158,14 @@ class GamePlay(
                 )
             }
         }
+    }
+
+    private fun DrawScope.drawEnemy(enemy: Enemy) {
+        drawCircle(
+            color = Color.Green,
+            radius = 6.dp.toPx(),
+            center = Offset(enemy.position.first * UnitScale, enemy.position.second * UnitScale)
+        )
     }
 
     private fun DrawScope.drawWall(position: Pair<Float, Float>, isVWall: Boolean) {
@@ -185,7 +192,7 @@ class GamePlay(
         val radiusPx = radius.toPx()
         drawArc(
             color = Color.Red,
-            startAngle = 0f,
+            startAngle = 30f,
             sweepAngle = animatedCutAngle,
             topLeft = Offset(center.x - radiusPx, center.y - radiusPx),
             size = Size(radiusPx * 2, radiusPx * 2),
