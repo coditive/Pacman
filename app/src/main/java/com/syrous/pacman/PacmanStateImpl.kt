@@ -10,6 +10,7 @@ class PacmanStateImpl : PacmanState {
 
     private var screenWidth = 0
     private var screenHeight = 0
+    private var chaseSeconds = 0
 
     override val pacman = MutableStateFlow(Pacman(Pair(0f, 0f), Directions.RIGHT))
     override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
@@ -38,30 +39,39 @@ class PacmanStateImpl : PacmanState {
                 }
 
                 EnemyModes.CHASING -> {
-                   enemyChasePacman(enemy)
+                    enemyChasePacman(enemy)
                 }
 
-                EnemyModes.FLEEING -> {}
+                EnemyModes.FLEEING -> {
+
+                }
             }
         }
     }
 
     private fun enemyChasePacman(enemy: Enemy) {
+        //A star Algo
         val enemyList = enemies.value.toMutableList()
         enemyList.remove(enemy)
-        var minDistance = Float.MAX_VALUE
-        var preferredDirection = Directions.RIGHT
-        for (dir in getAllowedDirections(enemy)){
-            val newPosition = enemy.position + dir.move
-            val distance = getEuclideanDistanceBetween(newPosition, pacman.value.position)
-            Log.d("PacmanStateImpl", "distance between enemy and pacman -> $distance")
-            if(distance < minDistance) {
-                minDistance = distance
-                preferredDirection = dir
+        if (chaseSeconds <= EnemyChaseSeconds) {
+            var minDistance = Float.MAX_VALUE
+            var preferredDirection = Directions.RIGHT
+            for (dir in getAllowedDirections(enemy)) {
+                val newPosition = enemy.position + dir.move
+                val distance = getEuclideanDistanceBetween(newPosition, pacman.value.position)
+                Log.d("PacmanStateImpl", "distance between enemy and pacman -> $distance")
+                if (distance < minDistance) {
+                    minDistance = distance
+                    preferredDirection = dir
+                }
             }
+            val newMove = enemy.position + preferredDirection.move
+            enemyList.add(enemy.copy(position = newMove))
+            chaseSeconds += 1
+        } else {
+            chaseSeconds = 0
+            enemyList.add(enemy.copy(enemyMode = EnemyModes.PATROLLING))
         }
-        val newMove = enemy.position + preferredDirection.move
-        enemyList.add(enemy.copy(position = newMove))
         enemies.value = enemyList
     }
 
