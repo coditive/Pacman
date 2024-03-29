@@ -164,7 +164,10 @@ class GamePlay(
         drawCircle(
             color = Color.Green,
             radius = 6.dp.toPx(),
-            center = Offset(enemy.position.first * UnitScale, enemy.position.second * UnitScale)
+            center = Offset(
+                enemy.position.first * UnitScale,
+                enemy.position.second * UnitScale
+            )
         )
     }
 
