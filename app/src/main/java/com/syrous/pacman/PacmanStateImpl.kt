@@ -1,6 +1,16 @@
 package com.syrous.pacman
 
 import android.util.Log
+import com.syrous.pacman.util.EnemyChaseSeconds
+import com.syrous.pacman.util.FoodRadius
+import com.syrous.pacman.util.Fraction_1_2
+import com.syrous.pacman.util.Fraction_1_4
+import com.syrous.pacman.util.Fraction_3_4
+import com.syrous.pacman.util.NumberOfEnemies
+import com.syrous.pacman.util.PacmanRadius
+import com.syrous.pacman.util.WallHeight
+import com.syrous.pacman.util.WallWidth
+import com.syrous.pacman.util.plus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -12,7 +22,7 @@ class PacmanStateImpl : PacmanState {
     private var screenHeight = 0
     private var chaseSeconds = 0
 
-    override val pacman = MutableStateFlow(Pacman(Pair(0f, 0f), Directions.RIGHT))
+    override val pacman = MutableStateFlow(Pacman(Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
     override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
@@ -185,8 +195,11 @@ class PacmanStateImpl : PacmanState {
 
     override fun moveUp() {
         val canHaveFoodResult = canHaveFood(pacman.value)
+        val prev = pacman.value.direction
         val newMove = Pacman(
-            position = pacman.value.position + Directions.UP.move, direction = Directions.UP
+            position = pacman.value.position + Directions.UP.move,
+            direction = Directions.UP,
+            previousDirection = prev
         )
         when {
             canHaveFoodResult != null -> {
@@ -196,14 +209,16 @@ class PacmanStateImpl : PacmanState {
             }
 
             else -> pacman.value = newMove
-
         }
     }
 
     override fun moveDown() {
         val canHaveFoodResult = canHaveFood(pacman.value)
+        val prev = pacman.value.direction
         val newMove = Pacman(
-            position = pacman.value.position + Directions.DOWN.move, direction = Directions.DOWN
+            position = pacman.value.position + Directions.DOWN.move,
+            direction = Directions.DOWN,
+            previousDirection = prev
         )
         when {
             canHaveFoodResult != null -> {
@@ -213,14 +228,16 @@ class PacmanStateImpl : PacmanState {
             }
 
             else -> pacman.value = newMove
-
         }
     }
 
     override fun moveLeft() {
         val canHaveFoodResult = canHaveFood(pacman.value)
+        val prev = pacman.value.direction
         val newMove = Pacman(
-            position = pacman.value.position + Directions.LEFT.move, direction = Directions.LEFT
+            position = pacman.value.position + Directions.LEFT.move,
+            direction = Directions.LEFT,
+            previousDirection = prev
         )
         when {
             canHaveFoodResult != null -> {
@@ -230,14 +247,16 @@ class PacmanStateImpl : PacmanState {
             }
 
             else -> pacman.value = newMove
-
         }
     }
 
     override fun moveRight() {
         val canHaveFoodResult = canHaveFood(pacman.value)
+        val prev = pacman.value.direction
         val newMove = Pacman(
-            position = pacman.value.position + Directions.RIGHT.move, direction = Directions.RIGHT
+            position = pacman.value.position + Directions.RIGHT.move,
+            direction = Directions.RIGHT,
+            previousDirection = prev
         )
         when {
             canHaveFoodResult != null -> {
@@ -247,14 +266,14 @@ class PacmanStateImpl : PacmanState {
             }
 
             else -> pacman.value = newMove
-
         }
     }
 
     private fun initializePacman() {
         pacman.value = Pacman(
             position = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2,
-            direction = Directions.RIGHT
+            direction = Directions.RIGHT,
+            previousDirection = Directions.RIGHT
         )
     }
 
@@ -355,8 +374,8 @@ class PacmanStateImpl : PacmanState {
     }
 }
 
-enum class Directions(val move: Pair<Float, Float>) {
-    LEFT(Pair(-1f, 0f)), RIGHT(Pair(1f, 0f)), UP(Pair(0f, -1f)), DOWN(Pair(0f, 1f)),
+enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
+    LEFT(Pair(-1f, 0f), -180f), RIGHT(Pair(1f, 0f), 0f), UP(Pair(0f, -1f), -90f), DOWN(Pair(0f, 1f), 90f),
 }
 
 enum class EnemyModes {

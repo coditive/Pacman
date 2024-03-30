@@ -25,18 +25,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.Enemy
-import com.syrous.pacman.PacmanRadius
+import com.syrous.pacman.Pacman
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
-import com.syrous.pacman.SmallHeight
-import com.syrous.pacman.UnitScale
-import com.syrous.pacman.WallHeight
-import com.syrous.pacman.WallWidth
+import com.syrous.pacman.util.PacmanRadius
+import com.syrous.pacman.util.SmallHeight
+import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.WallHeight
+import com.syrous.pacman.util.WallWidth
 
 
 sealed class GamePlayScreenAction {
@@ -75,7 +77,7 @@ class GamePlay(
                     .fillMaxHeight(.7f)
                     .border(width = 1.dp, color = Color.Gray)
                     .padding(paddingValues),
-                pacmanPosition = pacman.position,
+                pacman = pacman,
                 hWallList = hWallList,
                 vWallList = vWallList,
                 foodList = foodList,
@@ -97,7 +99,7 @@ class GamePlay(
     fun PacmanPlayer(
         modifier: Modifier = Modifier,
         animationDuration: Int = 500,
-        pacmanPosition: Pair<Float, Float>,
+        pacman: Pacman,
         hWallList: List<Pair<Float, Float>>,
         vWallList: List<Pair<Float, Float>>,
         foodList: List<Pair<Int, Int>>,
@@ -129,11 +131,10 @@ class GamePlay(
                     coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
                 )
             }) {
+            Log.d("GamePlayScreen", "pacman -> $")
             drawCircleWithCutout(
-                PacmanRadius.dp, animatedCutAngle = 310f, Offset(
-                    pacmanPosition.first * UnitScale.toFloat(),
-                    pacmanPosition.second * UnitScale.toFloat()
-                )
+                PacmanRadius.dp, animatedCutAngle = 310f, pacman
+
             )
 
             for (wall in hWallList) {
@@ -190,17 +191,28 @@ class GamePlay(
     }
 
     private fun DrawScope.drawCircleWithCutout(
-        radius: Dp, animatedCutAngle: Float, center: Offset
+        radius: Dp, animatedCutAngle: Float, pacman: Pacman
     ) {
         val radiusPx = radius.toPx()
-        drawArc(
-            color = Color.Red,
-            startAngle = 30f,
-            sweepAngle = animatedCutAngle,
-            topLeft = Offset(center.x - radiusPx, center.y - radiusPx),
-            size = Size(radiusPx * 2, radiusPx * 2),
-            useCenter = true,
-        )
+        rotate(
+            degrees = pacman.direction.angle,
+            pivot = Offset(
+                pacman.position.first * UnitScale.toFloat(),
+                pacman.position.second * UnitScale.toFloat()
+            )
+        ) {
+            drawArc(
+                color = Color.Red,
+                startAngle = 30f,
+                sweepAngle = animatedCutAngle,
+                topLeft = Offset(
+                    pacman.position.first * UnitScale - radiusPx,
+                    pacman.position.second * UnitScale - radiusPx
+                ),
+                size = Size(radiusPx * 2, radiusPx * 2),
+                useCenter = true,
+            )
+        }
     }
 
 

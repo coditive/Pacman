@@ -1,4 +1,4 @@
-package com.syrous.pacman
+package com.syrous.pacman.util
 
 import androidx.compose.ui.unit.dp
 

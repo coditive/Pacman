@@ -1,4 +1,4 @@
-package com.syrous.pacman
+package com.syrous.pacman.util
 
 
 operator fun Pair<Float, Float>.plus(other: Pair<Float, Float>): Pair<Float, Float> {
