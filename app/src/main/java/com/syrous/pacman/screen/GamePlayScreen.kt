@@ -1,12 +1,8 @@
 package com.syrous.pacman.screen
 
 import android.util.Log
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -24,8 +20,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,34 +98,32 @@ class GamePlay(
 
         }
     }
-
     @Composable
     fun PacmanPlayer(
         modifier: Modifier = Modifier,
-        animationDuration: Int = 500,
         pacman: Pacman,
         hWallList: List<Pair<Float, Float>>,
         vWallList: List<Pair<Float, Float>>,
         foodList: List<Pair<Int, Int>>,
         enemies: List<Enemy>
     ) {
-        val cutAngle = 70f
-        val transitionSpec = remember {
-            infiniteRepeatable(
-                animation = tween<Float>(
-                    durationMillis = animationDuration,
-                    easing = FastOutLinearInEasing
-                ),
-                repeatMode = RepeatMode.Restart
+        val cutAngle = 30f
+
+        val animatedCutAngle = remember {
+            Animatable(cutAngle)
+        }
+
+        LaunchedEffect(key1 = pacman) {
+            animatedCutAngle.animateTo(
+                targetValue = cutAngle,
+                animationSpec = keyframes {
+                    durationMillis = 500
+                    cutAngle at 0
+                    0f at 250
+                    cutAngle at 450
+                }
             )
         }
-        val transitionState = rememberInfiniteTransition(label = "pacman_infinite_transition")
-        val animatedCutAngle by transitionState.animateFloat(
-            initialValue = 360f - cutAngle,
-            targetValue = 390f,
-            animationSpec = transitionSpec,
-            label = "pacman_eating_animation"
-        )
 
         Canvas(modifier = modifier
             .fillMaxSize()
@@ -142,7 +136,7 @@ class GamePlay(
             Log.d("GamePlayScreen", "pacman -> $")
             drawCircleWithCutout(
                 radius = PacmanRadius.dp,
-                animatedCutAngle = animatedCutAngle,
+                animatedCutAngle = animatedCutAngle.value,
                 pacman = pacman
             )
 
@@ -214,8 +208,8 @@ class GamePlay(
         ) {
             drawArc(
                 color = Color.Red,
-                startAngle = 30f,
-                sweepAngle = animatedCutAngle,
+                startAngle = animatedCutAngle,
+                sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
                     pacman.position.first * UnitScale - radiusPx,
                     pacman.position.second * UnitScale - radiusPx

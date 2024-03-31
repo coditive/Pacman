@@ -22,7 +22,8 @@ class PacmanStateImpl : PacmanState {
     private var screenHeight = 0
     private var chaseSeconds = 0
 
-    override val pacman = MutableStateFlow(Pacman(Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
+    override val pacman =
+        MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
     override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
@@ -195,11 +196,13 @@ class PacmanStateImpl : PacmanState {
 
     override fun moveUp() {
         val canHaveFoodResult = canHaveFood(pacman.value)
-        val prev = pacman.value.direction
+        val prevPos = pacman.value.position
+        val prevDir = pacman.value.direction
         val newMove = Pacman(
             position = pacman.value.position + Directions.UP.move,
+            previousPosition = prevPos,
             direction = Directions.UP,
-            previousDirection = prev
+            previousDirection = prevDir
         )
         when {
             canHaveFoodResult != null -> {
@@ -214,11 +217,13 @@ class PacmanStateImpl : PacmanState {
 
     override fun moveDown() {
         val canHaveFoodResult = canHaveFood(pacman.value)
-        val prev = pacman.value.direction
+        val prevPos = pacman.value.position
+        val prevDir = pacman.value.direction
         val newMove = Pacman(
             position = pacman.value.position + Directions.DOWN.move,
+            previousPosition = prevPos,
             direction = Directions.DOWN,
-            previousDirection = prev
+            previousDirection = prevDir
         )
         when {
             canHaveFoodResult != null -> {
@@ -233,11 +238,13 @@ class PacmanStateImpl : PacmanState {
 
     override fun moveLeft() {
         val canHaveFoodResult = canHaveFood(pacman.value)
-        val prev = pacman.value.direction
+        val prevPos = pacman.value.position
+        val prevDir = pacman.value.direction
         val newMove = Pacman(
             position = pacman.value.position + Directions.LEFT.move,
+            previousPosition = prevPos,
             direction = Directions.LEFT,
-            previousDirection = prev
+            previousDirection = prevDir
         )
         when {
             canHaveFoodResult != null -> {
@@ -252,11 +259,13 @@ class PacmanStateImpl : PacmanState {
 
     override fun moveRight() {
         val canHaveFoodResult = canHaveFood(pacman.value)
-        val prev = pacman.value.direction
+        val prevPos = pacman.value.position
+        val prevDir = pacman.value.direction
         val newMove = Pacman(
             position = pacman.value.position + Directions.RIGHT.move,
+            previousPosition = prevPos,
             direction = Directions.RIGHT,
-            previousDirection = prev
+            previousDirection = prevDir
         )
         when {
             canHaveFoodResult != null -> {
@@ -272,6 +281,7 @@ class PacmanStateImpl : PacmanState {
     private fun initializePacman() {
         pacman.value = Pacman(
             position = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2,
+            previousPosition = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2,
             direction = Directions.RIGHT,
             previousDirection = Directions.RIGHT
         )
@@ -375,7 +385,10 @@ class PacmanStateImpl : PacmanState {
 }
 
 enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
-    LEFT(Pair(-1f, 0f), -180f), RIGHT(Pair(1f, 0f), 0f), UP(Pair(0f, -1f), -90f), DOWN(Pair(0f, 1f), 90f),
+    LEFT(Pair(-1f, 0f), -180f), RIGHT(Pair(1f, 0f), 0f), UP(Pair(0f, -1f), -90f), DOWN(
+        Pair(0f, 1f),
+        90f
+    ),
 }
 
 enum class EnemyModes {
