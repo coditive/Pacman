@@ -1,5 +1,7 @@
 package com.syrous.pacman.screen
 
+import android.content.Context
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
@@ -28,11 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.Enemy
 import com.syrous.pacman.Pacman
@@ -44,14 +50,12 @@ import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 
-
 sealed class GamePlayScreenAction {
     data object MoveUp : GamePlayScreenAction()
     data object MoveLeft : GamePlayScreenAction()
     data object MoveRight : GamePlayScreenAction()
     data object MoveDown : GamePlayScreenAction()
 }
-
 
 class GamePlay(
     private val gameState: PacmanState,
@@ -74,7 +78,6 @@ class GamePlay(
             val enemies = gameState.enemies.collectAsState().value
 
             Log.d("GamePlayScreen", "wallList -> $vWallList & $hWallList")
-
             PacmanPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -98,6 +101,7 @@ class GamePlay(
 
         }
     }
+
     @Composable
     fun PacmanPlayer(
         modifier: Modifier = Modifier,
@@ -108,13 +112,13 @@ class GamePlay(
         enemies: List<Enemy>
     ) {
         val cutAngle = 30f
-
-        val animatedCutAngle = remember {
+        val context = LocalContext.current
+        val animatableCutAngle = remember {
             Animatable(cutAngle)
         }
 
         LaunchedEffect(key1 = pacman) {
-            animatedCutAngle.animateTo(
+            animatableCutAngle.animateTo(
                 targetValue = cutAngle,
                 animationSpec = keyframes {
                     durationMillis = 500
@@ -136,7 +140,7 @@ class GamePlay(
             Log.d("GamePlayScreen", "pacman -> $")
             drawCircleWithCutout(
                 radius = PacmanRadius.dp,
-                animatedCutAngle = animatedCutAngle.value,
+                animatedCutAngle = animatableCutAngle.value,
                 pacman = pacman
             )
 
@@ -148,7 +152,7 @@ class GamePlay(
                 drawWall(wall, isVWall = true)
             }
             for (enemy in enemies) {
-                drawEnemy(enemy)
+                drawEnemy(enemy, context)
             }
 
             for (food in foodList) {
@@ -164,14 +168,14 @@ class GamePlay(
         }
     }
 
-    private fun DrawScope.drawEnemy(enemy: Enemy) {
-        drawCircle(
-            color = Color.Green,
-            radius = 6.dp.toPx(),
-            center = Offset(
-                enemy.position.first * UnitScale,
-                enemy.position.second * UnitScale
-            )
+    private fun DrawScope.drawEnemy(enemy: Enemy, context: Context) {
+        val image = BitmapFactory.decodeResource(context.resources, enemy.imageId).asImageBitmap()
+        drawImage(
+            image = image,
+            srcOffset = IntOffset.Zero,
+            srcSize = IntSize(image.width, image.height),
+            dstOffset = IntOffset(enemy.position.first.toInt() * UnitScale,enemy.position.second.toInt() * UnitScale),
+            dstSize = IntSize(50.dp.toPx().toInt(), 50.dp.toPx().toInt()),
         )
     }
 
