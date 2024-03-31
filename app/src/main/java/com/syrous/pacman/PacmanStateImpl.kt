@@ -42,6 +42,16 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
+    override fun updatePacmanPositionAfterLoop() {
+        val prevPacman = pacman.value
+        pacman.value = Pacman(
+            position = prevPacman.position + prevPacman.direction.move,
+            previousPosition = prevPacman.position,
+            direction = prevPacman.direction,
+            previousDirection = prevPacman.direction
+        )
+    }
+
     override fun updateEnemyPositionAfterLoop() {
         for (enemy in enemies.value) {
             when (enemy.enemyMode) {

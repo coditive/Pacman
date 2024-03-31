@@ -12,6 +12,7 @@ interface PacmanState {
     val enemies: StateFlow<List<Enemy>>
 
     fun updateScreenDimensions(width: Int, height: Int)
+    fun updatePacmanPositionAfterLoop()
     fun updateEnemyPositionAfterLoop()
     fun moveUp()
     fun moveDown()

@@ -31,6 +31,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         gameLoop = viewModelScope.launch {
             while (true) {
                 delay(160)
+                gameState.updatePacmanPositionAfterLoop()
                 gameState.updateEnemyPositionAfterLoop()
             }
         }
