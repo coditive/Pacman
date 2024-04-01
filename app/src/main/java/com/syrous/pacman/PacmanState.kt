@@ -10,10 +10,13 @@ interface PacmanState {
     val foodList: StateFlow<List<Pair<Int, Int>>>
     val score: StateFlow<Int>
     val enemies: StateFlow<List<Enemy>>
+    val isPaused: StateFlow<Boolean>
 
     fun updateScreenDimensions(width: Int, height: Int)
     fun updatePacmanPositionAfterLoop()
     fun updateEnemyPositionAfterLoop()
+    fun pauseGame()
+    fun resumeGame()
     fun moveUp()
     fun moveDown()
     fun moveLeft()

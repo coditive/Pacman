@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -55,6 +57,8 @@ sealed class GamePlayScreenAction {
     data object MoveLeft : GamePlayScreenAction()
     data object MoveRight : GamePlayScreenAction()
     data object MoveDown : GamePlayScreenAction()
+    data object PauseGame : GamePlayScreenAction()
+    data object ResumeGame : GamePlayScreenAction()
 }
 
 class GamePlay(
@@ -76,6 +80,7 @@ class GamePlay(
             val hWallList = gameState.hWallList.collectAsState().value
             val foodList = gameState.foodList.collectAsState().value
             val enemies = gameState.enemies.collectAsState().value
+            val isPause = gameState.isPaused.collectAsState().value
 
             Log.d("GamePlayScreen", "wallList -> $vWallList & $hWallList")
             PacmanPlayer(
@@ -96,9 +101,9 @@ class GamePlay(
                     .fillMaxWidth()
                     .wrapContentHeight()
                     .padding(paddingValues),
-                performAction = performAction
+                performAction = performAction,
+                pauseState = isPause
             )
-
         }
     }
 
@@ -111,7 +116,7 @@ class GamePlay(
         foodList: List<Pair<Int, Int>>,
         enemies: List<Enemy>
     ) {
-        val cutAngle = 30f
+        val cutAngle = 40f
         val context = LocalContext.current
         val animatableCutAngle = remember {
             Animatable(cutAngle)
@@ -121,10 +126,10 @@ class GamePlay(
             animatableCutAngle.animateTo(
                 targetValue = cutAngle,
                 animationSpec = keyframes {
-                    durationMillis = 500
-                    cutAngle at 0
-                    0f at 250
-                    cutAngle at 450
+                    durationMillis = 200
+                    cutAngle at 0 using FastOutLinearInEasing
+                    0f at 100 using LinearOutSlowInEasing
+                    cutAngle at 195
                 }
             )
         }
@@ -137,7 +142,7 @@ class GamePlay(
                     coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
                 )
             }) {
-            Log.d("GamePlayScreen", "pacman -> $")
+            Log.d("GamePlayScreen", "pacman -> $pacman")
             drawCircleWithCutout(
                 radius = PacmanRadius.dp,
                 animatedCutAngle = animatableCutAngle.value,
@@ -174,7 +179,10 @@ class GamePlay(
             image = image,
             srcOffset = IntOffset.Zero,
             srcSize = IntSize(image.width, image.height),
-            dstOffset = IntOffset(enemy.position.first.toInt() * UnitScale,enemy.position.second.toInt() * UnitScale),
+            dstOffset = IntOffset(
+                enemy.position.first.toInt() * UnitScale,
+                enemy.position.second.toInt() * UnitScale
+            ),
             dstSize = IntSize(50.dp.toPx().toInt(), 50.dp.toPx().toInt()),
         )
     }
@@ -227,7 +235,9 @@ class GamePlay(
 
     @Composable
     fun PacmanController(
-        modifier: Modifier = Modifier, performAction: (GamePlayScreenAction) -> Unit
+        modifier: Modifier = Modifier,
+        performAction: (GamePlayScreenAction) -> Unit,
+        pauseState: Boolean
     ) {
         Column(
             modifier
@@ -267,6 +277,18 @@ class GamePlay(
                         painter = painterResource(id = R.drawable.baseline_arrow_downward_24),
                         contentDescription = ""
                     )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = {
+                    if (pauseState) {performAction(GamePlayScreenAction.ResumeGame)}
+                    else performAction(GamePlayScreenAction.PauseGame)
+                }) {
+                    val string = if (pauseState) "Resume Game" else "Pause Game"
+                    Text(text = string)
                 }
             }
         }

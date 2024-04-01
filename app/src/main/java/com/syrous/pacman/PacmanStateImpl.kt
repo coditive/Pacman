@@ -1,6 +1,5 @@
 package com.syrous.pacman
 
-import android.util.Log
 import com.syrous.pacman.util.EnemyChaseSeconds
 import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.Fraction_1_2
@@ -29,12 +28,12 @@ class PacmanStateImpl : PacmanState {
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
     override val score = MutableStateFlow(0)
     override val enemies = MutableStateFlow<List<Enemy>>(listOf())
+    override val isPaused = MutableStateFlow(false)
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
             screenWidth = width
             screenHeight = height
-            Log.d("PacmanState", "width -> $screenWidth, height -> $screenHeight")
             initializePacman()
             initializeWall()
             initializeEnemies()
@@ -70,6 +69,14 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
+    override fun pauseGame() {
+        isPaused.value = true
+    }
+
+    override fun resumeGame() {
+        isPaused.value = false
+    }
+
     private fun enemyChasePacman(enemy: Enemy) {
         //A star Algo
         val enemyList = enemies.value.toMutableList()
@@ -80,7 +87,6 @@ class PacmanStateImpl : PacmanState {
             for (dir in getAllowedDirections(enemy)) {
                 val newPosition = enemy.position + dir.move
                 val distance = getEuclideanDistanceBetween(newPosition, pacman.value.position)
-                Log.d("PacmanStateImpl", "distance between enemy and pacman -> $distance")
                 if (distance < minDistance) {
                     minDistance = distance
                     preferredDirection = dir
@@ -395,10 +401,10 @@ class PacmanStateImpl : PacmanState {
 }
 
 enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
-    LEFT(Pair(-1f, 0f), -180f), RIGHT(Pair(1f, 0f), 0f), UP(Pair(0f, -1f), -90f), DOWN(
-        Pair(0f, 1f),
-        90f
-    ),
+    LEFT(Pair(-1f, 0f), -180f),
+    RIGHT(Pair(1f, 0f), 0f),
+    UP(Pair(0f, -1f), -90f),
+    DOWN(Pair(0f, 1f), 90f),
 }
 
 enum class EnemyModes {

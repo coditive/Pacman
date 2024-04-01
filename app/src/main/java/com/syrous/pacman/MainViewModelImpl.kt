@@ -14,25 +14,32 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         MutableStateFlow(GameScreen.START_SCREEN)
 
     override var gameState: PacmanState = PacmanStateImpl()
-
+    private var isPaused: Boolean = false
     private var gameLoop: Job? = null
-
 
     override fun startGame() {
         currentScreen.value = GameScreen.GAME_PLAY
+        isPaused = true
         resumeGame()
     }
 
     override fun pauseGame() {
-        TODO("Not yet implemented")
+        gameLoop?.cancel()
+        gameState.pauseGame()
+        gameLoop = null
+        isPaused = true
     }
 
     override fun resumeGame() {
-        gameLoop = viewModelScope.launch {
-            while (true) {
-                delay(160)
-                gameState.updatePacmanPositionAfterLoop()
-                gameState.updateEnemyPositionAfterLoop()
+        if (isPaused) {
+            isPaused = false
+            gameState.resumeGame()
+            gameLoop = viewModelScope.launch {
+                while (true) {
+                    delay(160)
+                    gameState.updatePacmanPositionAfterLoop()
+                    gameState.updateEnemyPositionAfterLoop()
+                }
             }
         }
     }
