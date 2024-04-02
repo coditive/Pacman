@@ -1,5 +1,7 @@
 package com.syrous.pacman
 
+import com.syrous.pacman.model.Ghost
+import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.util.EnemyChaseSeconds
 import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.Fraction_1_2

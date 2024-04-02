@@ -1,4 +1,6 @@
-package com.syrous.pacman
+package com.syrous.pacman.controller
+
+import com.syrous.pacman.PacmanState
 
 interface GameController {
 

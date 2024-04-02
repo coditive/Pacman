@@ -1,5 +1,7 @@
 package com.syrous.pacman
 
+import com.syrous.pacman.model.Ghost
+import com.syrous.pacman.model.Pacman
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 

@@ -42,8 +42,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.syrous.pacman.Ghost
-import com.syrous.pacman.Pacman
+import com.syrous.pacman.model.Ghost
+import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
 import com.syrous.pacman.util.PacmanRadius

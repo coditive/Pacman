@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.syrous.pacman.controller.GameController
 import com.syrous.pacman.navigation.GameScreen
 import com.syrous.pacman.screen.GameOver
 import com.syrous.pacman.screen.GamePlay

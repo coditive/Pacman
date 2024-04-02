@@ -2,6 +2,7 @@ package com.syrous.pacman
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.syrous.pacman.controller.GameController
 import com.syrous.pacman.navigation.GameScreen
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
