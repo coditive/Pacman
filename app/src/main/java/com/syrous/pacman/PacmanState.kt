@@ -1,5 +1,6 @@
 package com.syrous.pacman
 
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface PacmanState {
@@ -9,12 +10,13 @@ interface PacmanState {
     val hWallList: StateFlow<List<Pair<Float, Float>>>
     val foodList: StateFlow<List<Pair<Int, Int>>>
     val score: StateFlow<Int>
-    val enemies: StateFlow<List<Enemy>>
+    val ghosts: StateFlow<List<Ghost>>
     val isPaused: StateFlow<Boolean>
+    val gameEvent: SharedFlow<GameEvent>
 
     fun updateScreenDimensions(width: Int, height: Int)
     fun updatePacmanPositionAfterLoop()
-    fun updateEnemyPositionAfterLoop()
+    suspend fun updateEnemyPositionAfterLoop()
     fun pauseGame()
     fun resumeGame()
     fun moveUp()

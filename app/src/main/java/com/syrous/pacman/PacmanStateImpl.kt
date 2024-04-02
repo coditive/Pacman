@@ -10,6 +10,7 @@ import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.plus
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -27,8 +28,9 @@ class PacmanStateImpl : PacmanState {
     override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
     override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
     override val score = MutableStateFlow(0)
-    override val enemies = MutableStateFlow<List<Enemy>>(listOf())
+    override val ghosts = MutableStateFlow<List<Ghost>>(listOf())
     override val isPaused = MutableStateFlow(false)
+    override val gameEvent = MutableSharedFlow<GameEvent>()
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
@@ -69,12 +71,12 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    override fun updateEnemyPositionAfterLoop() {
-        for (enemy in enemies.value) {
+    override suspend fun updateEnemyPositionAfterLoop() {
+        for (enemy in ghosts.value) {
             when (enemy.enemyMode) {
                 EnemyModes.PATROLLING -> enemyPatrollingRoute(enemy)
 
-                EnemyModes.CHASING -> enemyChasePacman(enemy)
+                EnemyModes.CHASING -> ghostChasePacman(enemy)
 
                 EnemyModes.FLEEING -> {
 
@@ -91,33 +93,37 @@ class PacmanStateImpl : PacmanState {
         isPaused.value = false
     }
 
-    private fun enemyChasePacman(enemy: Enemy) {
+    private suspend fun ghostChasePacman(ghost: Ghost) {
         //A star Algo
-        val enemyList = enemies.value.toMutableList()
-        enemyList.remove(enemy)
+        val enemyList = ghosts.value.toMutableList()
+        enemyList.remove(ghost)
         if (chaseSeconds <= EnemyChaseSeconds) {
             var minDistance = Float.MAX_VALUE
             var preferredDirection = Directions.RIGHT
-            for (dir in getAllowedDirections(enemy)) {
-                val newPosition = enemy.position + dir.move
+            for (dir in getAllowedDirections(ghost)) {
+                val newPosition = ghost.position + dir.move
                 val distance = getEuclideanDistanceBetween(newPosition, pacman.value.position)
                 if (distance < minDistance) {
                     minDistance = distance
                     preferredDirection = dir
                 }
             }
-            val newMove = enemy.position + preferredDirection.move
-            enemyList.add(enemy.copy(position = newMove))
-            chaseSeconds += 1
+            val newMove = ghost.position + preferredDirection.move
+            if(minDistance in 1.5f..5.5f) {
+                gameEvent.emit(GameEvent.GhostAtePacman)
+            } else {
+                enemyList.add(ghost.copy(position = newMove))
+                chaseSeconds += 1
+            }
         } else {
             chaseSeconds = 0
-            enemyList.add(enemy.copy(enemyMode = EnemyModes.PATROLLING))
+            enemyList.add(ghost.copy(enemyMode = EnemyModes.PATROLLING))
         }
-        enemies.value = enemyList
+        ghosts.value = enemyList
     }
 
-    private fun getAllowedDirections(enemy: Enemy): List<Directions> {
-        return Directions.entries.toList().filterNot { it == getOppositeDirection(enemy.direction) }
+    private fun getAllowedDirections(ghost: Ghost): List<Directions> {
+        return Directions.entries.toList().filterNot { it == getOppositeDirection(ghost.direction) }
     }
 
     private fun getOppositeDirection(directions: Directions): Directions {
@@ -138,71 +144,71 @@ class PacmanStateImpl : PacmanState {
         pacman.value.position.first.toInt() !in PacmanRadius until screenWidth
                 || pacman.value.position.second.toInt() !in PacmanRadius until screenHeight
 
-    private fun checkPacmanNearBy(enemy: Enemy): Boolean {
-        val xRange = enemy.position.first - 15f..enemy.position.first + 15f
-        val yRange = enemy.position.second - 15f..enemy.position.second + 15f
+    private fun checkPacmanNearBy(ghost: Ghost): Boolean {
+        val xRange = ghost.position.first - 15f..ghost.position.first + 15f
+        val yRange = ghost.position.second - 15f..ghost.position.second + 15f
         return pacman.value.position.first in xRange && pacman.value.position.second in yRange
     }
 
-    private fun enemyPatrollingRoute(enemy: Enemy) {
-        val enemyList = enemies.value.toMutableList()
-        if (checkPacmanNearBy(enemy)) {
-            enemyList.remove(enemy)
-            enemyList.add(enemy.copy(enemyMode = EnemyModes.CHASING))
-            enemies.value = enemyList
+    private suspend fun enemyPatrollingRoute(ghost: Ghost) {
+        val enemyList = ghosts.value.toMutableList()
+        if (checkPacmanNearBy(ghost)) {
+            enemyList.remove(ghost)
+            enemyList.add(ghost.copy(enemyMode = EnemyModes.CHASING))
+            ghosts.value = enemyList
         } else {
-            val moveDirection = when (enemy.direction) {
+            val moveDirection = when (ghost.direction) {
                 Directions.LEFT -> {
                     when {
-                        enemy.position.first < 2f && enemy.position.second > screenHeight * Fraction_1_2 -> Directions.UP
-                        enemy.position.first < 2f && enemy.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                        ghost.position.first < 2f && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                        ghost.position.first < 2f && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
                         else -> Directions.LEFT
                     }
                 }
 
                 Directions.RIGHT -> {
                     when {
-                        enemy.position.first > screenWidth - 2f && enemy.position.second > screenHeight * Fraction_1_2 -> Directions.UP
-                        enemy.position.first > screenWidth - 2f && enemy.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                        ghost.position.first > screenWidth - 2f && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                        ghost.position.first > screenWidth - 2f && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
                         else -> Directions.RIGHT
                     }
                 }
 
                 Directions.UP -> {
                     when {
-                        enemy.position.second < 2f && enemy.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
-                        enemy.position.second < 2f && enemy.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                        ghost.position.second < 2f && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                        ghost.position.second < 2f && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
                         else -> Directions.UP
                     }
                 }
 
                 Directions.DOWN -> {
                     when {
-                        enemy.position.second > screenHeight - 2f && enemy.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
-                        enemy.position.second > screenHeight - 2f && enemy.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                        ghost.position.second > screenHeight - 2f && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                        ghost.position.second > screenHeight - 2f && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
                         else -> Directions.DOWN
                     }
                 }
             }
-            val newMove = enemy.position + moveDirection.move
-            enemyList.remove(enemy)
+            val newMove = ghost.position + moveDirection.move
+            enemyList.remove(ghost)
             enemyList.add(
-                Enemy(
+                Ghost(
                     position = newMove,
                     direction = moveDirection,
-                    imageId = enemy.imageId,
+                    imageId = ghost.imageId,
                     enemyMode = EnemyModes.PATROLLING
                 )
             )
-            enemies.value = enemyList
+            ghosts.value = enemyList
         }
     }
 
     private fun initializeEnemies() {
-        enemies.value = buildList {
+        ghosts.value = buildList {
             repeat(NumberOfEnemies) {
                 add(
-                    Enemy(
+                    Ghost(
                         position = if (it == 0) 4f to 4f else screenWidth - 4f * it.toFloat() to screenHeight - 4f * it.toFloat(),
                         direction = if (it == 0) Directions.DOWN else Directions.UP,
                         imageId = if (it == 0) R.drawable.ghost_red else R.drawable.ghost_orange,
@@ -424,4 +430,7 @@ enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
 
 enum class EnemyModes {
     PATROLLING, CHASING, FLEEING
+}
+sealed class GameEvent {
+    data object GhostAtePacman: GameEvent()
 }

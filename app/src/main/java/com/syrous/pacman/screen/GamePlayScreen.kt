@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.syrous.pacman.Enemy
+import com.syrous.pacman.Ghost
 import com.syrous.pacman.Pacman
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
@@ -79,7 +79,7 @@ class GamePlay(
             val vWallList = gameState.vWallList.collectAsState().value
             val hWallList = gameState.hWallList.collectAsState().value
             val foodList = gameState.foodList.collectAsState().value
-            val enemies = gameState.enemies.collectAsState().value
+            val enemies = gameState.ghosts.collectAsState().value
             val isPause = gameState.isPaused.collectAsState().value
 
             Log.d("GamePlayScreen", "wallList -> $vWallList & $hWallList")
@@ -114,7 +114,7 @@ class GamePlay(
         hWallList: List<Pair<Float, Float>>,
         vWallList: List<Pair<Float, Float>>,
         foodList: List<Pair<Int, Int>>,
-        enemies: List<Enemy>
+        enemies: List<Ghost>
     ) {
         val cutAngle = 40f
         val context = LocalContext.current
@@ -173,15 +173,15 @@ class GamePlay(
         }
     }
 
-    private fun DrawScope.drawEnemy(enemy: Enemy, context: Context) {
-        val image = BitmapFactory.decodeResource(context.resources, enemy.imageId).asImageBitmap()
+    private fun DrawScope.drawEnemy(ghost: Ghost, context: Context) {
+        val image = BitmapFactory.decodeResource(context.resources, ghost.imageId).asImageBitmap()
         drawImage(
             image = image,
             srcOffset = IntOffset.Zero,
             srcSize = IntSize(image.width, image.height),
             dstOffset = IntOffset(
-                enemy.position.first.toInt() * UnitScale,
-                enemy.position.second.toInt() * UnitScale
+                ghost.position.first.toInt() * UnitScale,
+                ghost.position.second.toInt() * UnitScale
             ),
             dstSize = IntSize(50.dp.toPx().toInt(), 50.dp.toPx().toInt()),
         )

@@ -9,18 +9,23 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.syrous.pacman.navigation.GameScreen
+import com.syrous.pacman.screen.GameOver
 import com.syrous.pacman.screen.GamePlay
 import com.syrous.pacman.screen.GamePlayScreenAction
 import com.syrous.pacman.screen.GameStart
 import com.syrous.pacman.screen.StartScreenAction
 import com.syrous.pacman.ui.theme.PacmanTheme
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
     //Screens
     private lateinit var gameStart: GameStart
     private lateinit var gamePlay: GamePlay
+    private lateinit var gameOver: GameOver
 
     //Controllers
     private val viewModel: GameViewModel by viewModels<MainViewModelImpl>()
@@ -32,11 +37,12 @@ class MainActivity : ComponentActivity() {
             PacmanTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     LoadScreens()
+                    loadListeners()
                     val screen = viewModel.currentScreen.collectAsState().value
                     when (screen) {
                         GameScreen.START_SCREEN -> gameStart.Screen()
                         GameScreen.GAME_PLAY -> gamePlay.Screen()
-                        GameScreen.GAME_OVER -> TODO()
+                        GameScreen.GAME_OVER -> gameOver.Screen()
                     }
                 }
             }
@@ -59,6 +65,16 @@ class MainActivity : ComponentActivity() {
                 GamePlayScreenAction.MoveUp -> controller.moveUp()
                 GamePlayScreenAction.PauseGame -> controller.pauseGame()
                 GamePlayScreenAction.ResumeGame -> controller.resumeGame()
+            }
+        }
+        gameOver = GameOver()
+    }
+    private fun loadListeners() {
+        lifecycleScope.launch {
+            controller.gameState.gameEvent.collectLatest {event ->
+                when(event) {
+                    GameEvent.GhostAtePacman -> controller.endGame()
+                }
             }
         }
     }
