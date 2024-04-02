@@ -11,7 +11,8 @@ const val SmallHeight = 15
 const val PacmanRadius = 10
 val FoodRadius = 5.dp
 
-const val NumberOfEnemies = 1
+const val NumberOfEnemies = 2
+const val GhostSize = 30
 const val EnemyChaseSeconds = 7
 
 const val Fraction_1_2 = 0.5f

@@ -43,24 +43,38 @@ class PacmanStateImpl : PacmanState {
 
     override fun updatePacmanPositionAfterLoop() {
         val prevPacman = pacman.value
-        pacman.value = Pacman(
-            position = prevPacman.position + prevPacman.direction.move,
-            previousPosition = prevPacman.position,
-            direction = prevPacman.direction,
-            previousDirection = prevPacman.direction
-        )
+        when{
+            checkPacmanAtBoundary() -> {
+                val (pacX, pacY) = prevPacman.position
+                val newMove = when(prevPacman.direction) {
+                    Directions.LEFT -> prevPacman.copy(position = Pair(screenWidth - PacmanRadius.toFloat(), pacY),)
+
+                    Directions.RIGHT -> prevPacman.copy(position = Pair(PacmanRadius.toFloat(), pacY),)
+
+                    Directions.UP -> prevPacman.copy(position = Pair(pacX, screenHeight - PacmanRadius.toFloat()),)
+
+                    Directions.DOWN -> prevPacman.copy(position = Pair(pacX, PacmanRadius.toFloat()),)
+                }
+                pacman.value = newMove
+            }
+
+            else -> {
+                pacman.value = Pacman(
+                    position = prevPacman.position + prevPacman.direction.move,
+                    previousPosition = prevPacman.position,
+                    direction = prevPacman.direction,
+                    previousDirection = prevPacman.direction
+                )
+            }
+        }
     }
 
     override fun updateEnemyPositionAfterLoop() {
         for (enemy in enemies.value) {
             when (enemy.enemyMode) {
-                EnemyModes.PATROLLING -> {
-                    enemyPatrollingRoute(enemy)
-                }
+                EnemyModes.PATROLLING -> enemyPatrollingRoute(enemy)
 
-                EnemyModes.CHASING -> {
-                    enemyChasePacman(enemy)
-                }
+                EnemyModes.CHASING -> enemyChasePacman(enemy)
 
                 EnemyModes.FLEEING -> {
 
@@ -118,9 +132,11 @@ class PacmanStateImpl : PacmanState {
     private fun getEuclideanDistanceBetween(
         start: Pair<Float, Float>,
         target: Pair<Float, Float>
-    ): Float {
-        return sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
-    }
+    ): Float = sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
+
+    private fun checkPacmanAtBoundary(): Boolean =
+        pacman.value.position.first.toInt() !in PacmanRadius until screenWidth
+                || pacman.value.position.second.toInt() !in PacmanRadius until screenHeight
 
     private fun checkPacmanNearBy(enemy: Enemy): Boolean {
         val xRange = enemy.position.first - 15f..enemy.position.first + 15f
@@ -196,7 +212,6 @@ class PacmanStateImpl : PacmanState {
             }
         }
     }
-
 
     private fun canHaveFood(pacman: Pacman): Pair<Int, Int>? {
         for (food in foodList.value) {
