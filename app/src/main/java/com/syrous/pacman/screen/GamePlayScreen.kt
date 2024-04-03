@@ -2,7 +2,6 @@ package com.syrous.pacman.screen
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
@@ -21,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,10 +42,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.syrous.pacman.model.Ghost
-import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
+import com.syrous.pacman.model.Ghost
+import com.syrous.pacman.model.Pacman
+import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.SmallHeight
 import com.syrous.pacman.util.UnitScale
@@ -68,6 +69,10 @@ class GamePlay(
 
     @Composable
     fun Screen(modifier: Modifier = Modifier) {
+        val pacmanColor = MaterialTheme.colorScheme.primary
+        val wallColor = MaterialTheme.colorScheme.onSurface
+        val foodColor = MaterialTheme.colorScheme.secondary
+
         Scaffold(
             modifier = modifier.fillMaxSize(),
             topBar = {
@@ -82,7 +87,6 @@ class GamePlay(
             val enemies = gameState.ghosts.collectAsState().value
             val isPause = gameState.isPaused.collectAsState().value
 
-            Log.d("GamePlayScreen", "wallList -> $vWallList & $hWallList")
             PacmanPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -93,7 +97,10 @@ class GamePlay(
                 hWallList = hWallList,
                 vWallList = vWallList,
                 foodList = foodList,
-                enemies = enemies
+                enemies = enemies,
+                pacmanColor = pacmanColor,
+                wallColor = wallColor,
+                foodColor = foodColor
             )
 
             PacmanController(
@@ -114,7 +121,10 @@ class GamePlay(
         hWallList: List<Pair<Float, Float>>,
         vWallList: List<Pair<Float, Float>>,
         foodList: List<Pair<Int, Int>>,
-        enemies: List<Ghost>
+        enemies: List<Ghost>,
+        pacmanColor: Color,
+        wallColor: Color,
+        foodColor: Color
     ) {
         val cutAngle = 40f
         val context = LocalContext.current
@@ -137,24 +147,23 @@ class GamePlay(
         Canvas(modifier = modifier
             .fillMaxSize()
             .onGloballyPositioned { coordinates ->
-                Log.d("GamePlayScreen", "Canvas coordinates -> ${coordinates.size}")
                 gameState.updateScreenDimensions(
                     coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
                 )
             }) {
-            Log.d("GamePlayScreen", "pacman -> $pacman")
             drawCircleWithCutout(
+                color = pacmanColor,
                 radius = PacmanRadius.dp,
                 animatedCutAngle = animatableCutAngle.value,
                 pacman = pacman
             )
 
             for (wall in hWallList) {
-                drawWall(wall, isVWall = false)
+                drawWall(wall, isVWall = false, wallColor)
             }
 
             for (wall in vWallList) {
-                drawWall(wall, isVWall = true)
+                drawWall(wall, isVWall = true, wallColor)
             }
             for (enemy in enemies) {
                 drawEnemy(enemy, context)
@@ -162,7 +171,7 @@ class GamePlay(
 
             for (food in foodList) {
                 drawCircle(
-                    color = Color.Black,
+                    color = foodColor,
                     radius = 5.dp.toPx(),
                     center = Offset(
                         food.first * UnitScale.toFloat(),
@@ -187,13 +196,13 @@ class GamePlay(
         )
     }
 
-    private fun DrawScope.drawWall(position: Pair<Float, Float>, isVWall: Boolean) {
-        Log.d(
-            "GamePlayScreen",
-            "position -> x->  ${position.first * UnitScale.toFloat()}, y -> ${position.second * UnitScale.toFloat()}, isVWall -> $isVWall"
-        )
+    private fun DrawScope.drawWall(
+        position: Pair<Float, Float>,
+        isVWall: Boolean,
+        wallColor: Color
+    ) {
         drawRect(
-            color = Color.Black,
+            color = wallColor,
             topLeft = Offset(
                 position.first * UnitScale,
                 position.second * UnitScale
@@ -206,6 +215,7 @@ class GamePlay(
     }
 
     private fun DrawScope.drawCircleWithCutout(
+        color: Color,
         radius: Dp,
         animatedCutAngle: Float,
         pacman: Pacman
@@ -219,7 +229,7 @@ class GamePlay(
             )
         ) {
             drawArc(
-                color = Color.Red,
+                color = color,
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
@@ -283,10 +293,14 @@ class GamePlay(
             Row(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = {
-                    if (pauseState) {performAction(GamePlayScreenAction.ResumeGame)}
-                    else performAction(GamePlayScreenAction.PauseGame)
-                }) {
+                Button(
+                    onClick = {
+                        if (pauseState) {
+                            performAction(GamePlayScreenAction.ResumeGame)
+                        } else performAction(GamePlayScreenAction.PauseGame)
+                    },
+                    colors = GameControlActionButtonScheme
+                ) {
                     val string = if (pauseState) "Resume Game" else "Pause Game"
                     Text(text = string)
                 }

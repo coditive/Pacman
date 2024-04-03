@@ -391,11 +391,11 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    private fun checkDrawOnWall(
-        foodPoint: Pair<Int, Int>, wallList: List<Pair<Float, Float>>
+    private fun checkWall(
+        point: Pair<Int, Int>, wallList: List<Pair<Float, Float>>
     ): Boolean {
         for (wall in wallList) {
-            if (foodPoint.first in wall.first.toInt() - FoodRadius.value.toInt()..WallHeight + FoodRadius.value.toInt() && foodPoint.second in wall.second.toInt() - FoodRadius.value.toInt()..WallWidth + FoodRadius.value.toInt()) return true
+            if (point.first in wall.first.toInt() - FoodRadius.value.toInt()..WallHeight + FoodRadius.value.toInt() && point.second in wall.second.toInt() - FoodRadius.value.toInt()..WallWidth + FoodRadius.value.toInt()) return true
         }
         return false
     }
@@ -414,8 +414,8 @@ class PacmanStateImpl : PacmanState {
     private fun generateFood(): Pair<Int, Int>? {
         val randomPoint = nextInt(screenWidth) to nextInt(screenHeight)
         return when {
-            checkDrawOnWall(randomPoint, hWallList.value) -> null
-            checkDrawOnWall(randomPoint, vWallList.value) -> null
+            checkWall(randomPoint, hWallList.value) -> null
+            checkWall(randomPoint, vWallList.value) -> null
             checkDrawOnBoundary(randomPoint) -> null
             checkDrawOnSelf(randomPoint) -> null
             else -> randomPoint

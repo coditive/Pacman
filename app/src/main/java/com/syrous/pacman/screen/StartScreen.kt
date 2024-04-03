@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,11 +25,11 @@ class GameStart(private val performAction: (StartScreenAction) -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Button({ performAction(StartScreenAction.StartGame) }) {
-                Text("Start Game")
+                Text("Start Game", style = MaterialTheme.typography.displaySmall)
             }
 
             Button(onClick = { performAction(StartScreenAction.EndGame) }) {
-                Text("End Game")
+                Text("End Game", style = MaterialTheme.typography.displaySmall)
             }
         }
     }
