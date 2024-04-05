@@ -1,15 +1,14 @@
 package com.syrous.pacman.screen
 
-import android.content.Context
-import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,13 +31,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -47,6 +44,9 @@ import com.syrous.pacman.R
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
+import com.syrous.pacman.ui.theme.PressStartFontFamily
+import com.syrous.pacman.util.CutAngle
+import com.syrous.pacman.util.EatAngle
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.SmallHeight
 import com.syrous.pacman.util.UnitScale
@@ -63,44 +63,41 @@ sealed class GamePlayScreenAction {
 }
 
 class GamePlay(
+    private val ghostImageList: List<ImageBitmap>,
     private val gameState: PacmanState,
     private val performAction: (GamePlayScreenAction) -> Unit
 ) {
 
+    private var pacmanColor: Color? = null
+    private var wallColor: Color? = null
+    private var foodColor: Color? = null
+
+    @Composable
+    fun Initialize() {
+        pacmanColor = MaterialTheme.colorScheme.primary
+        wallColor = MaterialTheme.colorScheme.onSurface
+        foodColor = MaterialTheme.colorScheme.secondary
+        Log.d("GamePlayScreen", "Initialize called!!")
+    }
+
     @Composable
     fun Screen(modifier: Modifier = Modifier) {
-        val pacmanColor = MaterialTheme.colorScheme.primary
-        val wallColor = MaterialTheme.colorScheme.onSurface
-        val foodColor = MaterialTheme.colorScheme.secondary
-
+        Initialize()
         Scaffold(
             modifier = modifier.fillMaxSize(),
             topBar = {
                 val score = gameState.score.collectAsState().value
-                Text(text = "Your Score: $score")
+                Text(text = "Your Score: $score", fontFamily = PressStartFontFamily)
             }
         ) { paddingValues ->
-            val pacman = gameState.pacman.collectAsState().value
-            val vWallList = gameState.vWallList.collectAsState().value
-            val hWallList = gameState.hWallList.collectAsState().value
-            val foodList = gameState.foodList.collectAsState().value
-            val enemies = gameState.ghosts.collectAsState().value
-            val isPause = gameState.isPaused.collectAsState().value
 
+            val isPause = gameState.isPaused.collectAsState().value
             PacmanPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight(.7f)
                     .border(width = 1.dp, color = Color.Gray)
-                    .padding(paddingValues),
-                pacman = pacman,
-                hWallList = hWallList,
-                vWallList = vWallList,
-                foodList = foodList,
-                enemies = enemies,
-                pacmanColor = pacmanColor,
-                wallColor = wallColor,
-                foodColor = foodColor
+                    .padding(paddingValues)
             )
 
             PacmanController(
@@ -115,63 +112,76 @@ class GamePlay(
     }
 
     @Composable
-    fun PacmanPlayer(
-        modifier: Modifier = Modifier,
-        pacman: Pacman,
-        hWallList: List<Pair<Float, Float>>,
-        vWallList: List<Pair<Float, Float>>,
-        foodList: List<Pair<Int, Int>>,
-        enemies: List<Ghost>,
-        pacmanColor: Color,
-        wallColor: Color,
-        foodColor: Color
-    ) {
-        val cutAngle = 40f
-        val context = LocalContext.current
+    fun PacmanPlayer(modifier: Modifier = Modifier) {
+        Box(modifier = modifier) {
+            PacmanScreenLayout(modifier = Modifier.fillMaxSize())
+            PacmanActorComposable(modifier = Modifier.fillMaxSize())
+        }
+    }
+
+    @Composable
+    private fun PacmanActorComposable(modifier: Modifier = Modifier) {
+        val pacman = gameState.pacman.collectAsState().value
+        val ghosts = gameState.ghosts.collectAsState().value
+
         val animatableCutAngle = remember {
-            Animatable(cutAngle)
+            Animatable(CutAngle)
         }
 
         LaunchedEffect(key1 = pacman) {
             animatableCutAngle.animateTo(
-                targetValue = cutAngle,
+                targetValue = CutAngle,
                 animationSpec = keyframes {
-                    durationMillis = 200
-                    cutAngle at 0 using FastOutLinearInEasing
-                    0f at 100 using LinearOutSlowInEasing
-                    cutAngle at 195
+                    durationMillis = 400
+                    CutAngle at 0 using LinearEasing
+                    EatAngle at 80 using LinearEasing
+                    0f at 100 using LinearEasing
+                    CutAngle at 195
                 }
             )
         }
 
         Canvas(modifier = modifier
-            .fillMaxSize()
             .onGloballyPositioned { coordinates ->
                 gameState.updateScreenDimensions(
                     coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
                 )
             }) {
             drawCircleWithCutout(
-                color = pacmanColor,
-                radius = PacmanRadius.dp,
+                color = pacmanColor!!,
+                radius = PacmanRadius,
                 animatedCutAngle = animatableCutAngle.value,
                 pacman = pacman
             )
 
+            for (ghost in ghosts) {
+                drawGhost(ghost, ghostImageList)
+            }
+        }
+    }
+
+    @Composable
+    private fun PacmanScreenLayout(modifier: Modifier = Modifier) {
+        val vWallList = gameState.vWallList.collectAsState().value
+        val hWallList = gameState.hWallList.collectAsState().value
+        val foodList = gameState.foodList.collectAsState().value
+
+        Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
+            gameState.updateScreenDimensions(
+                coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
+            )
+        }) {
             for (wall in hWallList) {
-                drawWall(wall, isVWall = false, wallColor)
+                drawWall(wall, isVWall = false, wallColor!!)
             }
 
             for (wall in vWallList) {
-                drawWall(wall, isVWall = true, wallColor)
-            }
-            for (enemy in enemies) {
-                drawEnemy(enemy, context)
+                drawWall(wall, isVWall = true, wallColor!!)
             }
 
             for (food in foodList) {
                 drawCircle(
-                    color = foodColor,
+                    color = foodColor!!,
                     radius = 5.dp.toPx(),
                     center = Offset(
                         food.first * UnitScale.toFloat(),
@@ -182,12 +192,12 @@ class GamePlay(
         }
     }
 
-    private fun DrawScope.drawEnemy(ghost: Ghost, context: Context) {
-        val image = BitmapFactory.decodeResource(context.resources, ghost.imageId).asImageBitmap()
+
+    private fun DrawScope.drawGhost(ghost: Ghost, ghostImageList: List<ImageBitmap>) {
         drawImage(
-            image = image,
+            image = ghostImageList[ghost.id],
             srcOffset = IntOffset.Zero,
-            srcSize = IntSize(image.width, image.height),
+            srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
             dstOffset = IntOffset(
                 ghost.position.first.toInt() * UnitScale,
                 ghost.position.second.toInt() * UnitScale
@@ -216,11 +226,10 @@ class GamePlay(
 
     private fun DrawScope.drawCircleWithCutout(
         color: Color,
-        radius: Dp,
+        radius: Float,
         animatedCutAngle: Float,
         pacman: Pacman
     ) {
-        val radiusPx = radius.toPx()
         rotate(
             degrees = pacman.direction.angle,
             pivot = Offset(
@@ -233,10 +242,10 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.position.first * UnitScale - radiusPx,
-                    pacman.position.second * UnitScale - radiusPx
+                    pacman.position.first * UnitScale - radius,
+                    pacman.position.second * UnitScale - radius
                 ),
-                size = Size(radiusPx * 2, radiusPx * 2),
+                size = Size(radius * 2, radius * 2),
                 useCenter = true,
             )
         }

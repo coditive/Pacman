@@ -60,17 +60,17 @@ val Typography = Typography(
         fontSize = 18.sp
     ),
     titleLarge = TextStyle(
-        fontFamily = RobotoFontFamily,
+        fontFamily = PressStartFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 24.sp
     ),
     titleMedium = TextStyle(
-        fontFamily = RobotoFontFamily,
+        fontFamily = PressStartFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp
     ),
     titleSmall = TextStyle(
-        fontFamily = RobotoFontFamily,
+        fontFamily = PressStartFontFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp
     ),

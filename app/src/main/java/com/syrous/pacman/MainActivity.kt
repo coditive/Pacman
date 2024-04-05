@@ -1,5 +1,6 @@
 package com.syrous.pacman
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +10,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.lifecycleScope
 import com.syrous.pacman.controller.GameController
 import com.syrous.pacman.navigation.GameScreen
@@ -23,6 +26,9 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
+    //Assets
+    private lateinit var ghostImageList: List<ImageBitmap>
+
     //Screens
     private lateinit var gameStart: GameStart
     private lateinit var gamePlay: GamePlay
@@ -34,6 +40,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        ghostImageList = buildList {
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_red).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_orange).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_red).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_red).asImageBitmap())
+        }
+
+
         setContent {
             PacmanTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -58,7 +73,7 @@ class MainActivity : ComponentActivity() {
                 StartScreenAction.StartGame -> controller.startGame()
             }
         }
-        gamePlay = GamePlay(controller.gameState) { action ->
+        gamePlay = GamePlay(ghostImageList, controller.gameState) { action ->
             when (action) {
                 GamePlayScreenAction.MoveDown -> controller.moveDown()
                 GamePlayScreenAction.MoveLeft -> controller.moveLeft()
@@ -70,10 +85,11 @@ class MainActivity : ComponentActivity() {
         }
         gameOver = GameOver()
     }
+
     private fun loadListeners() {
         lifecycleScope.launch {
-            controller.gameState.gameEvent.collectLatest {event ->
-                when(event) {
+            controller.gameState.gameEvent.collectLatest { event ->
+                when (event) {
                     GameEvent.GhostAtePacman -> controller.endGame()
                 }
             }

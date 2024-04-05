@@ -51,13 +51,13 @@ class PacmanStateImpl : PacmanState {
             checkPacmanAtBoundary() -> {
                 val (pacX, pacY) = prevPacman.position
                 val newMove = when(prevPacman.direction) {
-                    Directions.LEFT -> prevPacman.copy(position = Pair(screenWidth - PacmanRadius.toFloat(), pacY),)
+                    Directions.LEFT -> prevPacman.copy(position = Pair(screenWidth - (PacmanRadius / 8), pacY),)
 
-                    Directions.RIGHT -> prevPacman.copy(position = Pair(PacmanRadius.toFloat(), pacY),)
+                    Directions.RIGHT -> prevPacman.copy(position = Pair((PacmanRadius / 8), pacY),)
 
-                    Directions.UP -> prevPacman.copy(position = Pair(pacX, screenHeight - PacmanRadius.toFloat()),)
+                    Directions.UP -> prevPacman.copy(position = Pair(pacX, screenHeight - (PacmanRadius / 8)),)
 
-                    Directions.DOWN -> prevPacman.copy(position = Pair(pacX, PacmanRadius.toFloat()),)
+                    Directions.DOWN -> prevPacman.copy(position = Pair(pacX, (PacmanRadius / 8)),)
                 }
                 pacman.value = newMove
             }
@@ -143,8 +143,8 @@ class PacmanStateImpl : PacmanState {
     ): Float = sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
 
     private fun checkPacmanAtBoundary(): Boolean =
-        pacman.value.position.first.toInt() !in PacmanRadius until screenWidth
-                || pacman.value.position.second.toInt() !in PacmanRadius until screenHeight
+        pacman.value.position.first.toInt() !in (PacmanRadius.toInt() / 8) .. screenWidth - (PacmanRadius.toInt() / 8)
+                || pacman.value.position.second.toInt() !in (PacmanRadius.toInt() / 8) .. screenHeight - (PacmanRadius.toInt() / 8)
 
     private fun checkPacmanNearBy(ghost: Ghost): Boolean {
         val xRange = ghost.position.first - 15f..ghost.position.first + 15f
@@ -152,7 +152,7 @@ class PacmanStateImpl : PacmanState {
         return pacman.value.position.first in xRange && pacman.value.position.second in yRange
     }
 
-    private suspend fun enemyPatrollingRoute(ghost: Ghost) {
+    private fun enemyPatrollingRoute(ghost: Ghost) {
         val enemyList = ghosts.value.toMutableList()
         if (checkPacmanNearBy(ghost)) {
             enemyList.remove(ghost)
@@ -196,6 +196,7 @@ class PacmanStateImpl : PacmanState {
             enemyList.remove(ghost)
             enemyList.add(
                 Ghost(
+                    id = ghost.id,
                     position = newMove,
                     direction = moveDirection,
                     imageId = ghost.imageId,
@@ -211,6 +212,7 @@ class PacmanStateImpl : PacmanState {
             repeat(NumberOfEnemies) {
                 add(
                     Ghost(
+                        id = it,
                         position = if (it == 0) 4f to 4f else screenWidth - 4f * it.toFloat() to screenHeight - 4f * it.toFloat(),
                         direction = if (it == 0) Directions.DOWN else Directions.UP,
                         imageId = if (it == 0) R.drawable.ghost_red else R.drawable.ghost_orange,
@@ -319,8 +321,8 @@ class PacmanStateImpl : PacmanState {
 
     private fun initializePacman() {
         pacman.value = Pacman(
-            position = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2,
-            previousPosition = screenWidth * Fraction_1_2 to screenHeight * Fraction_1_2,
+            position = screenWidth * Fraction_1_2 + PacmanRadius to screenHeight * Fraction_1_2 + PacmanRadius,
+            previousPosition = screenWidth * Fraction_1_2 + PacmanRadius to screenHeight * Fraction_1_2 + PacmanRadius,
             direction = Directions.RIGHT,
             previousDirection = Directions.RIGHT
         )
@@ -328,57 +330,17 @@ class PacmanStateImpl : PacmanState {
 
     private fun initializeWall() {
         hWallList.value = buildList {
-            add(
-                Pair(
-                    screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2),
-                    screenHeight * Fraction_1_4
-                )
-            )
-            add(
-                Pair(
-                    screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2),
-                    screenHeight * Fraction_1_4
-                )
-            )
-            add(
-                Pair(
-                    screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2),
-                    screenHeight * Fraction_3_4
-                )
-            )
-            add(
-                Pair(
-                    screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2),
-                    screenHeight * Fraction_3_4
-                )
-            )
+            add(Pair(screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_1_4))
+            add(Pair(screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_1_4))
+            add(Pair(screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_3_4))
+            add(Pair(screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_3_4))
         }
 
         vWallList.value = buildList {
-            add(
-                Pair(
-                    hWallList.value[0].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[0].second
-                )
-            )
-            add(
-                Pair(
-                    hWallList.value[1].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[1].second
-                )
-            )
-            add(
-                Pair(
-                    hWallList.value[2].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[2].second - 5.5f
-                )
-            )
-            add(
-                Pair(
-                    hWallList.value[3].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2),
-                    hWallList.value[3].second - 5.5f
-                )
-            )
+            add(Pair(hWallList.value[0].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[0].second))
+            add(Pair(hWallList.value[1].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[1].second))
+            add(Pair(hWallList.value[2].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[2].second - 5.5f))
+            add(Pair(hWallList.value[3].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[3].second - 5.5f))
         }
     }
 
@@ -395,18 +357,18 @@ class PacmanStateImpl : PacmanState {
         point: Pair<Int, Int>, wallList: List<Pair<Float, Float>>
     ): Boolean {
         for (wall in wallList) {
-            if (point.first in wall.first.toInt() - FoodRadius.value.toInt()..WallHeight + FoodRadius.value.toInt() && point.second in wall.second.toInt() - FoodRadius.value.toInt()..WallWidth + FoodRadius.value.toInt()) return true
+            if (point.first in wall.first.toInt() - FoodRadius.toInt()..WallHeight + FoodRadius.toInt() && point.second in wall.second.toInt() - FoodRadius.toInt()..WallWidth + FoodRadius.toInt()) return true
         }
         return false
     }
 
     private fun checkDrawOnBoundary(foodPoint: Pair<Int, Int>): Boolean {
-        return foodPoint.first !in 1 until screenWidth - FoodRadius.value.toInt() && foodPoint.second !in 1 until screenHeight - FoodRadius.value.toInt()
+        return foodPoint.first !in 1 until screenWidth - FoodRadius.toInt() && foodPoint.second !in 1 until screenHeight - FoodRadius.toInt()
     }
 
     private fun checkDrawOnSelf(foodPoint: Pair<Int, Int>): Boolean {
         for (food in foodList.value) {
-            if (foodPoint.first in food.first..food.first + FoodRadius.value.toInt() || food.second in food.second..food.second + FoodRadius.value.toInt()) return true
+            if (foodPoint.first in food.first..food.first + FoodRadius.toInt() || food.second in food.second..food.second + FoodRadius.toInt()) return true
         }
         return false
     }
