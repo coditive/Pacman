@@ -20,12 +20,13 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
     override var gameState: PacmanState = PacmanStateImpl()
     private var isPaused: Boolean = false
+    private var isStarted: Boolean = false
     private var gameLoop: Job? = null
 
     //private
     private var lastTime: Long = 0L
     private val availableFps = intArrayOf(90, 45, 30)
-    private var chosenFps = 0
+    private var chosenFps = 2
     private var pausedTime: Long = 0L
     private var tickInterval = 0.0
     private var timeDelta = 0.0
@@ -37,10 +38,8 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
     override fun startGame() {
         currentScreen.value = GameScreen.GAME_PLAY
-        isPaused = false
+        isStarted = true
         initializeTickInterval()
-        canDecreaseFps = false
-        chosenFps = 2
         resumeGame()
     }
 
@@ -52,23 +51,28 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     }
 
     override fun resumeGame() {
-        gameState.resumeGame()
-        gameLoop = viewModelScope.launch {
-            while (true) {
-                Log.d("MainViewModel", "tick interval -> $tickInterval")
-                gameLoop()
-                delay(round(tickInterval).toLong())
-            }
-        }
+       if(isStarted && isPaused) {
+           lastTime += Date().time - pausedTime
+           gameState.resumeGame()
+           isPaused = false
+           gameLoop = viewModelScope.launch {
+               while (true) {
+                   Log.d("MainViewModel", "tick interval -> $tickInterval")
+                   gameLoop()
+                   delay(round(tickInterval).toLong())
+               }
+           }
+       }
     }
 
     private fun initializeTickInterval() {
         val fps = availableFps[chosenFps]
-        tickInterval = (1000 / fps).toDouble()
+        tickInterval = (10000 / fps).toDouble()
         tickMultiplier = DEFAULT_FPS / fps
         lastTime = Date().time
         timeDelta = 0.0
         slownessCount = 0
+        Log.d("MainViewModel", "init tick interval -> timeMultiplier -> $tickMultiplier , tickInterval -> $tickInterval")
     }
 
     private suspend fun gameLoop() {
@@ -130,19 +134,27 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     }
 
     override fun moveUp() {
-        gameState.moveUp()
+        if (!isPaused) {
+            gameState.moveUp()
+        }
     }
 
     override fun moveLeft() {
-        gameState.moveLeft()
+        if (!isPaused) {
+            gameState.moveLeft()
+        }
     }
 
     override fun moveRight() {
-        gameState.moveRight()
+        if (!isPaused) {
+            gameState.moveRight()
+        }
     }
 
     override fun moveDown() {
-        gameState.moveDown()
+        if (!isPaused) {
+            gameState.moveDown()
+        }
     }
 
 }
