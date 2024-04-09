@@ -1,15 +1,21 @@
 package com.syrous.pacman.util
 
-import androidx.compose.ui.unit.dp
 
-
-const val UnitScale = 10
+const val UnitScale = 9
 const val WallWidth = 10
-const val SmallWidth = 5
 const val WallHeight = 20
 const val SmallHeight = 15
-const val PacmanRadius = 10
-val FoodRadius = 5.dp
+const val PacmanRadius = 25f
+const val FoodRadius = 5f
+
+const val FoodUnitRadius = FoodRadius / 9
+const val PacmanUnitRadius = PacmanRadius / 9
+
+const val CutAngle = 40f
+const val EatAngle = 60f
+
+const val TileWidth = 9
+const val TileHeight = 9
 
 const val NumberOfEnemies = 2
 const val GhostSize = 30
