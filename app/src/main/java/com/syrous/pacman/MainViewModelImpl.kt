@@ -64,7 +64,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
     private fun initializeTickInterval() {
         val fps = availableFps[chosenFps]
-        tickInterval = (1000 / fps).toDouble()
+        tickInterval = (10000 / fps).toDouble()
         tickMultiplier = DEFAULT_FPS / fps
         lastTime = Date().time
         timeDelta = 0.0

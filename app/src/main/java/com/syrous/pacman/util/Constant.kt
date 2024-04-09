@@ -8,6 +8,9 @@ const val SmallHeight = 15
 const val PacmanRadius = 25f
 const val FoodRadius = 5f
 
+const val FoodUnitRadius = FoodRadius / 9
+const val PacmanUnitRadius = PacmanRadius / 9
+
 const val CutAngle = 40f
 const val EatAngle = 60f
 

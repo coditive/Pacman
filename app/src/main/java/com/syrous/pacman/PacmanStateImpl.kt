@@ -4,11 +4,13 @@ import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.util.EnemyChaseSeconds
 import com.syrous.pacman.util.FoodRadius
+import com.syrous.pacman.util.FoodUnitRadius
 import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
 import com.syrous.pacman.util.Fraction_3_4
 import com.syrous.pacman.util.NumberOfEnemies
 import com.syrous.pacman.util.PacmanRadius
+import com.syrous.pacman.util.PacmanUnitRadius
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.plus
@@ -46,24 +48,36 @@ class PacmanStateImpl : PacmanState {
     }
 
     override fun updatePacmanPositionAfterLoop() {
+        val canHaveFood = canHaveFood(pacman.value)
         val prevPacman = pacman.value
-        when{
+        val prevDir = pacman.value.direction
+        val newMove = when {
             checkPacmanAtBoundary() -> {
                 val (pacX, pacY) = prevPacman.position
-                val newMove = when(prevPacman.direction) {
-                    Directions.LEFT -> prevPacman.copy(position = Pair(screenWidth - (PacmanRadius / 8), pacY),)
+                when (prevDir) {
+                    Directions.LEFT -> prevPacman.copy(position = Pair(screenWidth - PacmanUnitRadius, pacY),)
 
-                    Directions.RIGHT -> prevPacman.copy(position = Pair((PacmanRadius / 8), pacY),)
+                    Directions.RIGHT -> prevPacman.copy(position = Pair(PacmanUnitRadius, pacY))
 
-                    Directions.UP -> prevPacman.copy(position = Pair(pacX, screenHeight - (PacmanRadius / 8)),)
+                    Directions.UP -> prevPacman.copy(position = Pair(pacX, screenHeight - PacmanUnitRadius),)
 
-                    Directions.DOWN -> prevPacman.copy(position = Pair(pacX, (PacmanRadius / 8)),)
+                    Directions.DOWN -> prevPacman.copy(position = Pair(pacX, PacmanUnitRadius))
                 }
-                pacman.value = newMove
+            }
+
+            canHaveFood != null -> {
+                foodList.value = foodList.value.filterNot { it == canHaveFood }
+                score.value += 1
+                Pacman(
+                    position = prevPacman.position + prevDir.move,
+                    previousPosition = prevPacman.previousPosition,
+                    direction = prevDir,
+                    previousDirection = prevDir
+                )
             }
 
             else -> {
-                pacman.value = Pacman(
+                Pacman(
                     position = prevPacman.position + prevPacman.direction.move,
                     previousPosition = prevPacman.position,
                     direction = prevPacman.direction,
@@ -71,6 +85,7 @@ class PacmanStateImpl : PacmanState {
                 )
             }
         }
+        pacman.value = newMove
     }
 
     override suspend fun updateEnemyPositionAfterLoop() {
@@ -111,8 +126,8 @@ class PacmanStateImpl : PacmanState {
                 }
             }
             val newMove = ghost.position + preferredDirection.move
-            if(minDistance in 1.5f..5.5f) {
-                gameEvent.emit(GameEvent.GhostAtePacman)
+            if (minDistance in 1.5f..5.5f) {
+//                gameEvent.emit(GameEvent.GhostAtePacman)
             } else {
                 enemyList.add(ghost.copy(position = newMove))
                 chaseSeconds += 1
@@ -143,8 +158,8 @@ class PacmanStateImpl : PacmanState {
     ): Float = sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
 
     private fun checkPacmanAtBoundary(): Boolean =
-        pacman.value.position.first.toInt() !in (PacmanRadius.toInt() / 8) .. screenWidth - (PacmanRadius.toInt() / 8)
-                || pacman.value.position.second.toInt() !in (PacmanRadius.toInt() / 8) .. screenHeight - (PacmanRadius.toInt() / 8)
+        pacman.value.position.first.toInt() !in PacmanUnitRadius.toInt()..screenWidth - PacmanUnitRadius.toInt()
+                || pacman.value.position.second.toInt() !in PacmanUnitRadius.toInt()..screenHeight - PacmanUnitRadius.toInt()
 
     private fun checkPacmanNearBy(ghost: Ghost): Boolean {
         val xRange = ghost.position.first - 15f..ghost.position.first + 15f
@@ -225,9 +240,9 @@ class PacmanStateImpl : PacmanState {
 
     private fun canHaveFood(pacman: Pacman): Pair<Int, Int>? {
         for (food in foodList.value) {
-            val pacmanXRange = pacman.position.first..pacman.position.first + PacmanRadius
+            val pacmanXRange = pacman.position.first - PacmanUnitRadius + FoodUnitRadius..pacman.position.first + PacmanUnitRadius - FoodUnitRadius
             val pacmanYRange =
-                pacman.position.second..pacman.position.second + (PacmanRadius * Fraction_1_2)
+                pacman.position.second - PacmanUnitRadius + FoodUnitRadius..pacman.position.second + PacmanUnitRadius - FoodUnitRadius
             if (food.first.toFloat() in pacmanXRange && food.second.toFloat() in pacmanYRange) {
                 return food
             }
@@ -395,6 +410,7 @@ enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
 enum class EnemyModes {
     PATROLLING, CHASING, FLEEING
 }
+
 sealed class GameEvent {
-    data object GhostAtePacman: GameEvent()
+    data object GhostAtePacman : GameEvent()
 }
