@@ -1,6 +1,5 @@
 package com.syrous.pacman
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.syrous.pacman.controller.GameController
@@ -51,65 +50,50 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     }
 
     override fun resumeGame() {
-       if(isStarted && isPaused) {
-           lastTime += Date().time - pausedTime
-           gameState.resumeGame()
-           isPaused = false
-           gameLoop = viewModelScope.launch {
-               while (true) {
-                   Log.d("MainViewModel", "tick interval -> $tickInterval")
-                   gameLoop()
-                   delay(round(tickInterval).toLong())
-               }
-           }
-       }
+        if (isStarted && !isPaused) {
+            lastTime += Date().time - pausedTime
+            gameState.resumeGame()
+            isPaused = false
+            gameLoop = viewModelScope.launch {
+                while (true) {
+                    gameLoop()
+                    delay(round(tickInterval).toLong())
+                }
+            }
+        }
     }
 
     private fun initializeTickInterval() {
         val fps = availableFps[chosenFps]
-        tickInterval = (10000 / fps).toDouble()
+        tickInterval = (1000 / fps).toDouble()
         tickMultiplier = DEFAULT_FPS / fps
         lastTime = Date().time
         timeDelta = 0.0
         slownessCount = 0
-        Log.d("MainViewModel", "init tick interval -> timeMultiplier -> $tickMultiplier , tickInterval -> $tickInterval")
     }
 
     private suspend fun gameLoop() {
-        Log.d("MainViewModel", "gameLoop called!!, isPaused -> $isPaused")
         val now = Date().time
         if (isPaused) {
             pausedTime = now
             return
         }
-        Log.d("MainViewModel", "time delta -> $timeDelta , fps -> ${availableFps[chosenFps]}")
-
         timeDelta += now - lastTime - tickInterval
-
-        if(timeDelta > 100) {
+        if (timeDelta > 100) {
             timeDelta = 100.0
         }
-        Log.d("MainViewModel", "time delta -> $timeDelta , fps -> ${availableFps[chosenFps]}")
-
         if (canDecreaseFps && timeDelta > 50) {
-            Log.d("MainViewModel", "inside decrease FPS, timeDelta -> $timeDelta !!")
             // If the fps can be reduced, count the number of instances where latency is over 50 ms.
             slownessCount += 1
             if (slownessCount == 20) {
-                Log.d("MainViewModel", "decrease FPS called!!")
                 decreaseFps()
             }
         }
-        Log.d("MainViewModel", "time delta -> $timeDelta , fps -> ${availableFps[chosenFps]}")
-
         var latency = 0
         if (timeDelta > tickInterval) {
             latency = floor(timeDelta / tickInterval).toInt()
             timeDelta -= (tickInterval * latency).toLong()
         }
-
-        Log.d("MainViewModel", "latency -> $latency, tickInterval -> $tickInterval, lastTime -> $lastTime")
-
         lastTime = now
 
         for (i in 0 until tickMultiplier + latency) {

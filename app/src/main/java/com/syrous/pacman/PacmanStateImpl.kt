@@ -1,5 +1,6 @@
 package com.syrous.pacman
 
+import android.util.Log
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.util.EnemyChaseSeconds
@@ -51,6 +52,7 @@ class PacmanStateImpl : PacmanState {
         val canHaveFood = canHaveFood(pacman.value)
         val prevPacman = pacman.value
         val prevDir = pacman.value.direction
+        Log.d("PacmanStateImpl", "pacman -> ${pacman.value}, prevPacman -> $prevPacman, preDir -> $prevDir")
         val newMove = when {
             checkPacmanAtBoundary() -> {
                 val (pacX, pacY) = prevPacman.position
@@ -70,7 +72,7 @@ class PacmanStateImpl : PacmanState {
                 score.value += 1
                 Pacman(
                     position = prevPacman.position + prevDir.move,
-                    previousPosition = prevPacman.previousPosition,
+                    previousPosition = prevPacman.position,
                     direction = prevDir,
                     previousDirection = prevDir
                 )
@@ -78,10 +80,10 @@ class PacmanStateImpl : PacmanState {
 
             else -> {
                 Pacman(
-                    position = prevPacman.position + prevPacman.direction.move,
+                    position = prevPacman.position + prevDir.move,
                     previousPosition = prevPacman.position,
-                    direction = prevPacman.direction,
-                    previousDirection = prevPacman.direction
+                    direction = prevDir,
+                    previousDirection = prevDir
                 )
             }
         }
@@ -110,7 +112,7 @@ class PacmanStateImpl : PacmanState {
         isPaused.value = false
     }
 
-    private suspend fun ghostChasePacman(ghost: Ghost) {
+    private fun ghostChasePacman(ghost: Ghost) {
         //A star Algo
         val enemyList = ghosts.value.toMutableList()
         enemyList.remove(ghost)

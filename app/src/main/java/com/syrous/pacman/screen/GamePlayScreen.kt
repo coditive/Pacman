@@ -52,6 +52,7 @@ import com.syrous.pacman.util.SmallHeight
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
+import com.syrous.pacman.util.convertToDisplayPos
 
 sealed class GamePlayScreenAction {
     data object MoveUp : GamePlayScreenAction()
@@ -233,8 +234,8 @@ class GamePlay(
         rotate(
             degrees = pacman.direction.angle,
             pivot = Offset(
-                pacman.position.first * UnitScale.toFloat(),
-                pacman.position.second * UnitScale.toFloat()
+                pacman.position.convertToDisplayPos().first * UnitScale,
+                pacman.position.convertToDisplayPos().second * UnitScale
             )
         ) {
             drawArc(
@@ -242,8 +243,8 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.position.first * UnitScale - radius,
-                    pacman.position.second * UnitScale - radius
+                    pacman.position.convertToDisplayPos().first * UnitScale - radius,
+                    pacman.position.convertToDisplayPos().second * UnitScale - radius
                 ),
                 size = Size(radius * 2, radius * 2),
                 useCenter = true,
