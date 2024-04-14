@@ -49,10 +49,10 @@ import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.SmallHeight
-import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
-import com.syrous.pacman.util.convertToDisplayPos
+import com.syrous.pacman.util.convertFloatToDisplayPos
+import com.syrous.pacman.util.convertIntToDisplayPos
 
 sealed class GamePlayScreenAction {
     data object MoveUp : GamePlayScreenAction()
@@ -145,7 +145,7 @@ class GamePlay(
         Canvas(modifier = modifier
             .onGloballyPositioned { coordinates ->
                 gameState.updateScreenDimensions(
-                    coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
+                    coordinates.size.width, coordinates.size.height
                 )
             }) {
             drawCircleWithCutout(
@@ -169,7 +169,7 @@ class GamePlay(
 
         Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
             gameState.updateScreenDimensions(
-                coordinates.size.width / UnitScale, coordinates.size.height / UnitScale
+                coordinates.size.width, coordinates.size.height
             )
         }) {
             for (wall in hWallList) {
@@ -185,8 +185,8 @@ class GamePlay(
                     color = foodColor!!,
                     radius = 5.dp.toPx(),
                     center = Offset(
-                        food.first * UnitScale.toFloat(),
-                        food.second * UnitScale.toFloat()
+                        food.convertIntToDisplayPos().first,
+                        food.convertIntToDisplayPos().second
                     )
                 )
             }
@@ -200,8 +200,8 @@ class GamePlay(
             srcOffset = IntOffset.Zero,
             srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
             dstOffset = IntOffset(
-                ghost.position.first.toInt() * UnitScale,
-                ghost.position.second.toInt() * UnitScale
+                ghost.position.convertFloatToDisplayPos().first.toInt(),
+                ghost.position.convertFloatToDisplayPos().second.toInt()
             ),
             dstSize = IntSize(50.dp.toPx().toInt(), 50.dp.toPx().toInt()),
         )
@@ -215,12 +215,12 @@ class GamePlay(
         drawRect(
             color = wallColor,
             topLeft = Offset(
-                position.first * UnitScale,
-                position.second * UnitScale
+                position.convertFloatToDisplayPos().first,
+                position.convertFloatToDisplayPos().second
             ),
             size = Size(
-                if (isVWall) WallWidth * UnitScale.toFloat() else WallHeight * UnitScale.toFloat(),
-                if (isVWall) SmallHeight * UnitScale.toFloat() else WallWidth * UnitScale.toFloat()
+                if (isVWall) WallWidth.toFloat() else WallHeight.toFloat(),
+                if (isVWall) SmallHeight.toFloat() else WallWidth.toFloat()
             )
         )
     }
@@ -234,8 +234,8 @@ class GamePlay(
         rotate(
             degrees = pacman.direction.angle,
             pivot = Offset(
-                pacman.position.convertToDisplayPos().first * UnitScale,
-                pacman.position.convertToDisplayPos().second * UnitScale
+                pacman.position.convertFloatToDisplayPos().first,
+                pacman.position.convertFloatToDisplayPos().second
             )
         ) {
             drawArc(
@@ -243,8 +243,8 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.position.convertToDisplayPos().first * UnitScale - radius,
-                    pacman.position.convertToDisplayPos().second * UnitScale - radius
+                    pacman.position.convertFloatToDisplayPos().first - radius,
+                    pacman.position.convertFloatToDisplayPos().second - radius
                 ),
                 size = Size(radius * 2, radius * 2),
                 useCenter = true,

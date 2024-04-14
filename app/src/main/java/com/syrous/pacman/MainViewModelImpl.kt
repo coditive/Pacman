@@ -18,7 +18,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         MutableStateFlow(GameScreen.START_SCREEN)
 
     override var gameState: PacmanState = PacmanStateImpl()
-    private var isPaused: Boolean = false
+    private var isPaused: Boolean = true
     private var isStarted: Boolean = false
     private var gameLoop: Job? = null
 
@@ -50,7 +50,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     }
 
     override fun resumeGame() {
-        if (isStarted && !isPaused) {
+        if (isStarted && isPaused) {
             lastTime += Date().time - pausedTime
             gameState.resumeGame()
             isPaused = false
