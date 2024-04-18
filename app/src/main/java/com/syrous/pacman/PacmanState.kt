@@ -1,24 +1,24 @@
 package com.syrous.pacman
 
+import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
+import com.syrous.pacman.model.Tile
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 interface PacmanState {
 
     val pacman: StateFlow<Pacman>
-    val vWallList: StateFlow<List<Pair<Float, Float>>>
-    val hWallList: StateFlow<List<Pair<Float, Float>>>
-    val foodList: StateFlow<List<Pair<Int, Int>>>
+    val playField: Map<Int, Map<Int, Tile>>
+    val foodList: StateFlow<Map<Int, Map<Int, Food>>>
     val score: StateFlow<Int>
     val ghosts: StateFlow<List<Ghost>>
     val isPaused: StateFlow<Boolean>
     val gameEvent: SharedFlow<GameEvent>
 
     fun updateScreenDimensions(width: Int, height: Int)
-    fun updatePacmanPositionAfterLoop()
-    suspend fun updateEnemyPositionAfterLoop()
+    suspend fun updatePositionAfterLoop()
     fun pauseGame()
     fun resumeGame()
     fun moveUp()

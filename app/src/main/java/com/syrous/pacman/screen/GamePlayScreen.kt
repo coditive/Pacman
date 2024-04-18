@@ -47,12 +47,12 @@ import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
 import com.syrous.pacman.ui.theme.PressStartFontFamily
 import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
+import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.SmallHeight
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.convertFloatToDisplayPos
-import com.syrous.pacman.util.convertIntToDisplayPos
 
 sealed class GamePlayScreenAction {
     data object MoveUp : GamePlayScreenAction()
@@ -133,7 +133,6 @@ class GamePlay(
             animatableCutAngle.animateTo(
                 targetValue = CutAngle,
                 animationSpec = keyframes {
-                    durationMillis = 400
                     CutAngle at 0 using LinearEasing
                     EatAngle at 80 using LinearEasing
                     0f at 100 using LinearEasing
@@ -185,8 +184,8 @@ class GamePlay(
                     color = foodColor!!,
                     radius = 5.dp.toPx(),
                     center = Offset(
-                        food.convertIntToDisplayPos().first,
-                        food.convertIntToDisplayPos().second
+                        food.first.toFloat(),
+                        food.second.toFloat()
                     )
                 )
             }
@@ -203,7 +202,7 @@ class GamePlay(
                 ghost.position.convertFloatToDisplayPos().first.toInt(),
                 ghost.position.convertFloatToDisplayPos().second.toInt()
             ),
-            dstSize = IntSize(50.dp.toPx().toInt(), 50.dp.toPx().toInt()),
+            dstSize = IntSize(GhostSize, GhostSize),
         )
     }
 

@@ -1,25 +1,29 @@
 package com.syrous.pacman
 
-import android.util.Log
+import com.syrous.pacman.model.Directions
+import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
+import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.EnemyChaseSeconds
 import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.FoodUnitRadius
 import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
 import com.syrous.pacman.util.Fraction_3_4
+import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.NumberOfEnemies
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.PacmanUnitRadius
+import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.plus
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.pow
 import kotlin.math.sqrt
-import kotlin.random.Random.Default.nextInt
 
 class PacmanStateImpl : PacmanState {
 
@@ -29,9 +33,8 @@ class PacmanStateImpl : PacmanState {
 
     override val pacman =
         MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
-    override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
-    override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
-    override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
+    override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
+    override val foodList = MutableStateFlow<Map<Int, Map<Int, Food>>>(mutableMapOf())
     override val score = MutableStateFlow(0)
     override val ghosts = MutableStateFlow<List<Ghost>>(listOf())
     override val isPaused = MutableStateFlow(false)
@@ -41,18 +44,27 @@ class PacmanStateImpl : PacmanState {
         if (width != screenWidth && height != screenHeight) {
             screenWidth = width
             screenHeight = height
+            initializePlayField()
             initializePacman()
             initializeWall()
-            initializeEnemies()
+            initializeGhosts()
             populateFood()
         }
     }
 
-    override fun updatePacmanPositionAfterLoop() {
+    private fun initializePlayField() {
+
+    }
+
+    override suspend fun updatePositionAfterLoop() {
+        updatePacmanPositionAfterLoop()
+        updateEnemyPositionAfterLoop()
+    }
+
+    private suspend fun updatePacmanPositionAfterLoop() {
         val canHaveFood = canHaveFood(pacman.value)
         val prevPacman = pacman.value
         val prevDir = pacman.value.direction
-        Log.d("PacmanStateImpl", "pacman -> ${pacman.value}, prevPacman -> $prevPacman, preDir -> $prevDir")
         val newMove = when {
             checkPacmanAtBoundary() -> {
                 val (pacX, pacY) = prevPacman.position
@@ -90,7 +102,7 @@ class PacmanStateImpl : PacmanState {
         pacman.value = newMove
     }
 
-    override suspend fun updateEnemyPositionAfterLoop() {
+    private suspend fun updateEnemyPositionAfterLoop() {
         for (enemy in ghosts.value) {
             when (enemy.enemyMode) {
                 EnemyModes.PATROLLING -> enemyPatrollingRoute(enemy)
@@ -179,32 +191,32 @@ class PacmanStateImpl : PacmanState {
             val moveDirection = when (ghost.direction) {
                 Directions.LEFT -> {
                     when {
-                        ghost.position.first < 2f && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
-                        ghost.position.first < 2f && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                        ghost.position.first < GhostSize && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                        ghost.position.first < GhostSize && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
                         else -> Directions.LEFT
                     }
                 }
 
                 Directions.RIGHT -> {
                     when {
-                        ghost.position.first > screenWidth - 2f && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
-                        ghost.position.first > screenWidth - 2f && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                        ghost.position.first > screenWidth - GhostSize && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                        ghost.position.first > screenWidth - GhostSize && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
                         else -> Directions.RIGHT
                     }
                 }
 
                 Directions.UP -> {
                     when {
-                        ghost.position.second < 2f && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
-                        ghost.position.second < 2f && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                        ghost.position.second < GhostSize && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                        ghost.position.second < GhostSize && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
                         else -> Directions.UP
                     }
                 }
 
                 Directions.DOWN -> {
                     when {
-                        ghost.position.second > screenHeight - 2f && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
-                        ghost.position.second > screenHeight - 2f && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                        ghost.position.second > screenHeight - GhostSize && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                        ghost.position.second > screenHeight - GhostSize && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
                         else -> Directions.DOWN
                     }
                 }
@@ -224,13 +236,13 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    private fun initializeEnemies() {
+    private fun initializeGhosts() {
         ghosts.value = buildList {
             repeat(NumberOfEnemies) {
                 add(
                     Ghost(
                         id = it,
-                        position = if (it == 0) 4f to 4f else screenWidth - 4f * it.toFloat() to screenHeight - 4f * it.toFloat(),
+                        position = if (it == 0) GhostSize * Fraction_1_4 to GhostSize * Fraction_1_4 else screenWidth - GhostSize * it.toFloat() to screenHeight - GhostSize * it.toFloat(),
                         direction = if (it == 0) Directions.DOWN else Directions.UP,
                         imageId = if (it == 0) R.drawable.ghost_red else R.drawable.ghost_orange,
                         enemyMode = EnemyModes.PATROLLING
@@ -363,9 +375,11 @@ class PacmanStateImpl : PacmanState {
 
     private fun populateFood() {
         foodList.value = buildList {
-            repeat(50) {
-                val food = generateFood()
-                if (food != null) add(food)
+            for(x in UnitScale..screenWidth * UnitScale step UnitScale) {
+                for(y in UnitScale..screenHeight * UnitScale step  UnitScale) {
+                    val food = generateFood(Pair(x, y))
+                    if(food != null) add(food)
+                }
             }
         }
     }
@@ -390,8 +404,7 @@ class PacmanStateImpl : PacmanState {
         return false
     }
 
-    private fun generateFood(): Pair<Int, Int>? {
-        val randomPoint = nextInt(screenWidth) to nextInt(screenHeight)
+    private fun generateFood(randomPoint: Pair<Int, Int>): Pair<Int, Int>? {
         return when {
             checkWall(randomPoint, hWallList.value) -> null
             checkWall(randomPoint, vWallList.value) -> null
@@ -402,12 +415,6 @@ class PacmanStateImpl : PacmanState {
     }
 }
 
-enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
-    LEFT(Pair(-1f, 0f), -180f),
-    RIGHT(Pair(1f, 0f), 0f),
-    UP(Pair(0f, -1f), -90f),
-    DOWN(Pair(0f, 1f), 90f),
-}
 
 enum class EnemyModes {
     PATROLLING, CHASING, FLEEING

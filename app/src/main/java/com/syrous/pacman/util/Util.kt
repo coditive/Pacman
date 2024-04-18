@@ -16,12 +16,3 @@ fun Pair<Float, Float>.convertFloatToDisplayPos(): Pair<Float, Float> {
     return Pair(newTileX, newTileY)
 }
 
-fun Pair<Int, Int>.convertIntToDisplayPos(): Pair<Float, Float> {
-    val (pacX, pacY) = this
-    val imaginaryX = pacX / UnitScale.toFloat()
-    val imaginaryY = pacY / UnitScale.toFloat()
-    val newTileX = round(imaginaryX) * UnitScale
-    val newTileY = round(imaginaryY) * UnitScale
-    return Pair(newTileX, newTileY)
-}
-

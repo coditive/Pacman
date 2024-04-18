@@ -1,5 +1,6 @@
 package com.syrous.pacman
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.syrous.pacman.controller.GameController
@@ -57,6 +58,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
             gameLoop = viewModelScope.launch {
                 while (true) {
                     gameLoop()
+                    Log.d("MainViewModelImpl", "tickInterval -> $tickInterval")
                     delay(round(tickInterval).toLong())
                 }
             }
@@ -97,8 +99,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         lastTime = now
 
         for (i in 0 until tickMultiplier + latency) {
-            gameState.updatePacmanPositionAfterLoop()
-            gameState.updateEnemyPositionAfterLoop()
+            gameState.updatePositionAfterLoop()
         }
     }
 
