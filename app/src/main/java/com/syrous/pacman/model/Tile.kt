@@ -4,5 +4,6 @@ data class Tile(
     val isIntersection: Boolean,
     val isPath: Boolean,
     val isTunnel: Boolean,
-    val allowedDir: Set<Directions>,
+    val food: Food,
+    val allowedDir: Set<Directions> = emptySet(),
 )

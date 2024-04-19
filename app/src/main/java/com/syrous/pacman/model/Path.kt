@@ -3,21 +3,22 @@ package com.syrous.pacman.model
 class Path private constructor(
     val x: Int,
     val y: Int,
-    val horizontalLength: Int = 0,
-    val verticalLength: Int = 0,
+    val horizontalLength: Int,
+    val verticalLength: Int,
     val tunnel: Boolean,
-    val isPath: Boolean = true,
-    val isIntersection: Boolean = false,
-    val allowedDir: Set<Directions> = emptySet()
 ) {
+    override fun toString(): String {
+        return "Path -> x: $x, y: $y, horizontalLength: $horizontalLength, verticalLength: $verticalLength, tunnel: $tunnel"
+    }
+
     companion object {
         fun createHorizontalPath(x: Int, y: Int, horizontalLength: Int): Path =
-            Path(x, y, horizontalLength, tunnel = false)
+            Path(x, y, horizontalLength, 0, tunnel = false)
 
         fun createVerticalPath(x: Int, y: Int, verticalLength: Int): Path =
-            Path(x, y, verticalLength, tunnel = false)
+            Path(x, y, 0, verticalLength, tunnel = false)
 
         fun createTunnelPath(x: Int, y: Int, horizontalLength: Int): Path =
-            Path(x, y, horizontalLength, tunnel = true)
+            Path(x, y, horizontalLength, 0, tunnel = true)
     }
 }

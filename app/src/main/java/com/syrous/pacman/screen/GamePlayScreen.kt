@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
+import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
@@ -162,8 +163,6 @@ class GamePlay(
 
     @Composable
     private fun PacmanScreenLayout(modifier: Modifier = Modifier) {
-        val vWallList = gameState.vWallList.collectAsState().value
-        val hWallList = gameState.hWallList.collectAsState().value
         val foodList = gameState.foodList.collectAsState().value
 
         Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
@@ -171,27 +170,25 @@ class GamePlay(
                 coordinates.size.width, coordinates.size.height
             )
         }) {
-            for (wall in hWallList) {
-                drawWall(wall, isVWall = false, wallColor!!)
-            }
+            drawFood(foodList)
+        }
+    }
 
-            for (wall in vWallList) {
-                drawWall(wall, isVWall = true, wallColor!!)
-            }
-
-            for (food in foodList) {
+    private fun DrawScope.drawFood(foodList: Map<Int, Map<Int, Food>>) {
+        for (x in foodList.keys) {
+            val col = foodList[x]
+            for (y in col!!.keys) {
                 drawCircle(
                     color = foodColor!!,
                     radius = 5.dp.toPx(),
                     center = Offset(
-                        food.first.toFloat(),
-                        food.second.toFloat()
+                        x.toFloat(),
+                        y.toFloat()
                     )
                 )
             }
         }
     }
-
 
     private fun DrawScope.drawGhost(ghost: Ghost, ghostImageList: List<ImageBitmap>) {
         drawImage(

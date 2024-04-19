@@ -1,6 +1,5 @@
 package com.syrous.pacman.model
 
-import com.syrous.pacman.Directions
 import com.syrous.pacman.EnemyModes
 
 data class Ghost (
