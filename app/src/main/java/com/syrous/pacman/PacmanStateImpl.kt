@@ -1,17 +1,22 @@
 package com.syrous.pacman
 
 import android.util.Log
+import com.syrous.pacman.model.Directions
+import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
+import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.EnemyChaseSeconds
 import com.syrous.pacman.util.FoodRadius
-import com.syrous.pacman.util.FoodUnitRadius
 import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
-import com.syrous.pacman.util.Fraction_3_4
+import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.NumberOfEnemies
+import com.syrous.pacman.util.PATHS
+import com.syrous.pacman.util.PATH_WITHOUT_FOOD
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.PacmanUnitRadius
+import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.plus
@@ -19,19 +24,19 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.pow
 import kotlin.math.sqrt
-import kotlin.random.Random.Default.nextInt
 
 class PacmanStateImpl : PacmanState {
 
     private var screenWidth = 0
     private var screenHeight = 0
+    private var gameWidth = 0
+    private var gameHeight = 0
     private var chaseSeconds = 0
 
     override val pacman =
         MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
-    override val vWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
-    override val hWallList = MutableStateFlow<List<Pair<Float, Float>>>(listOf())
-    override val foodList = MutableStateFlow<List<Pair<Int, Int>>>(listOf())
+    override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
+    override val foodList = MutableStateFlow<MutableMap<Int, MutableMap<Int, Food>>>(mutableMapOf())
     override val score = MutableStateFlow(0)
     override val ghosts = MutableStateFlow<List<Ghost>>(listOf())
     override val isPaused = MutableStateFlow(false)
@@ -41,34 +46,180 @@ class PacmanStateImpl : PacmanState {
         if (width != screenWidth && height != screenHeight) {
             screenWidth = width
             screenHeight = height
-            initializePacman()
-            initializeWall()
-            initializeEnemies()
-            populateFood()
+            determinePlayingFieldSize()
+            initializePlayField()
+            preparePaths()
+            prepareAllowedDirections()
+            createPlayFieldElements()
         }
     }
 
-    override fun updatePacmanPositionAfterLoop() {
+    private fun determinePlayingFieldSize() {
+        for (p in PATHS) {
+            if (p.horizontalLength > 0) {
+                val x = p.x + p.horizontalLength - 1
+                if (x > gameWidth) {
+                    gameWidth = x
+                }
+            } else {
+                val y = p.y + p.verticalLength - 1
+                if (y > gameHeight) {
+                    gameHeight = y
+                }
+            }
+        }
+        Log.d("PacmanStateImpl", "Game Dimension -> x -> $gameWidth, y -> $gameHeight")
+    }
+
+    private fun initializePlayField() {
+        for (x in 0..gameWidth + 1) {
+            val col = hashMapOf<Int, Tile>()
+            for (y in 0..gameHeight + 1) {
+                val tile = Tile(isIntersection = false, isPath = false, isTunnel = false, food = Food.NONE)
+                col[y * UnitScale] = tile
+            }
+            playField[x * UnitScale] = col
+        }
+        Log.d("PacmanStateImpl", "playField -> x -> ${playField.entries}, y -> ${playField[0]!!.entries} ")
+    }
+
+    private fun prepareTile(x: Int, y: Int, tunnel: Boolean, food: Food): Tile {
+        return Tile(
+            isPath = true,
+            isTunnel = tunnel,
+            isIntersection = false,
+            food = if (playField[x]!![y]!!.food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
+        )
+    }
+
+    private fun preparePaths() {
+        for (p in PATHS) {
+            val startX = p.x * UnitScale
+            val startY = p.y * UnitScale
+            Log.d("PacmanStateImpl", "prepare path -> path -> $p ")
+            if (p.horizontalLength > 0) {
+                val endX = (p.x + p.horizontalLength - 1) * UnitScale
+                val y = p.y * UnitScale
+
+                for (x in (p.x + 1) * UnitScale until endX step UnitScale) {
+                    playField[x]!![y] = prepareTile(x, y, p.tunnel, playField[x]!![y]!!.food)
+                }
+
+                playField[startX]!![y] =
+                    prepareTile(startX, y, p.tunnel, playField[startX]!![y]!!.food)
+                playField[endX]!![y] = prepareTile(endX, y, p.tunnel, playField[endX]!![y]!!.food)
+            } else {
+                val endY = (p.y + p.verticalLength - 1) * UnitScale
+                val x = p.x * UnitScale
+
+                for (y in (p.y + 1) * UnitScale..endY step UnitScale) {
+                    playField[x]!![y] = prepareTile(x, y, p.tunnel, playField[x]!![y]!!.food)
+                }
+
+                playField[x]!![startY] =
+                    prepareTile(x, startY, p.tunnel, playField[x]!![startY]!!.food)
+                playField[x]!![endY] = prepareTile(x, endY, p.tunnel, playField[x]!![endY]!!.food)
+            }
+        }
+        
+        for (p in PATH_WITHOUT_FOOD) {
+            if (p.horizontalLength != 0) {
+                for(x in p.x * UnitScale..(p.x + p.horizontalLength - 1) * UnitScale step UnitScale) {
+                    playField[x]!![p.y * UnitScale] = playField[x]!![p.y * UnitScale]!!.copy(food = Food.NONE)
+                }
+            } else {
+                for(y in p.y * UnitScale..(p.y + p.verticalLength - 1) * UnitScale step UnitScale) {
+                    playField[p.x * UnitScale]!![y] = playField[p.x * UnitScale]!![y]!!.copy(food = Food.NONE)
+                }
+            }
+        }
+
+    }
+
+    private fun createPlayFieldElements() {
+        createPellets()
+        initializePacman()
+        initializeWall()
+        initializeGhosts()
+    }
+
+    private fun createPellets() {
+        val food = foodList.value
+        val scaleFactorX = (screenWidth / (gameWidth * UnitScale))
+        val scaleFactorY = (screenHeight / (gameHeight * UnitScale))
+        Log.d("PacmanStateImpl", "scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
+        for(x in UnitScale..gameWidth * UnitScale step UnitScale) {
+            val col = mutableMapOf<Int, Food>()
+            for(y in UnitScale..gameHeight * UnitScale step UnitScale) {
+                if(playField[x]!![y]!!.food != Food.NONE) {
+                    col[y * scaleFactorY] = Food.PELLET
+                }
+            }
+            food[x * scaleFactorX] = col
+        }
+        Log.d("PacmanStateImpl", "foodList -> $food")
+        foodList.value = food
+    }
+
+
+    private fun prepareAllowedDirections() {
+        for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
+            for (y in UnitScale..gameHeight * UnitScale step UnitScale) {
+                val allowedDir = mutableSetOf<Directions>()
+                when {
+                    playField[x]!![y - UnitScale]!!.isPath -> {
+                        allowedDir.add(Directions.UP)
+                    }
+
+                    playField[x]!![y + UnitScale]!!.isPath -> {
+                        allowedDir.add(Directions.DOWN)
+                    }
+
+                    playField[x - UnitScale]!![y]!!.isPath -> {
+                        allowedDir.add(Directions.LEFT)
+                    }
+
+                    playField[x + UnitScale]!![y]!!.isPath -> {
+                        allowedDir.add(Directions.RIGHT)
+                    }
+                }
+                playField[x]!![y] = playField[x]!![y]!!.copy(allowedDir = allowedDir)
+            }
+        }
+    }
+
+    override suspend fun updatePositionAfterLoop() {
+        updatePacmanPositionAfterLoop()
+        updateEnemyPositionAfterLoop()
+    }
+
+    private suspend fun updatePacmanPositionAfterLoop() {
         val canHaveFood = canHaveFood(pacman.value)
         val prevPacman = pacman.value
         val prevDir = pacman.value.direction
-        Log.d("PacmanStateImpl", "pacman -> ${pacman.value}, prevPacman -> $prevPacman, preDir -> $prevDir")
         val newMove = when {
             checkPacmanAtBoundary() -> {
                 val (pacX, pacY) = prevPacman.position
                 when (prevDir) {
-                    Directions.LEFT -> prevPacman.copy(position = Pair(screenWidth - PacmanUnitRadius, pacY),)
+                    Directions.LEFT -> prevPacman.copy(
+                        position = Pair(
+                            screenWidth - PacmanUnitRadius, pacY
+                        ),
+                    )
 
                     Directions.RIGHT -> prevPacman.copy(position = Pair(PacmanUnitRadius, pacY))
 
-                    Directions.UP -> prevPacman.copy(position = Pair(pacX, screenHeight - PacmanUnitRadius),)
+                    Directions.UP -> prevPacman.copy(
+                        position = Pair(
+                            pacX, screenHeight - PacmanUnitRadius
+                        ),
+                    )
 
                     Directions.DOWN -> prevPacman.copy(position = Pair(pacX, PacmanUnitRadius))
                 }
             }
 
             canHaveFood != null -> {
-                foodList.value = foodList.value.filterNot { it == canHaveFood }
                 score.value += 1
                 Pacman(
                     position = prevPacman.position + prevDir.move,
@@ -90,7 +241,7 @@ class PacmanStateImpl : PacmanState {
         pacman.value = newMove
     }
 
-    override suspend fun updateEnemyPositionAfterLoop() {
+    private suspend fun updateEnemyPositionAfterLoop() {
         for (enemy in ghosts.value) {
             when (enemy.enemyMode) {
                 EnemyModes.PATROLLING -> enemyPatrollingRoute(enemy)
@@ -155,13 +306,11 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun getEuclideanDistanceBetween(
-        start: Pair<Float, Float>,
-        target: Pair<Float, Float>
+        start: Pair<Float, Float>, target: Pair<Float, Float>
     ): Float = sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
 
     private fun checkPacmanAtBoundary(): Boolean =
-        pacman.value.position.first.toInt() !in PacmanUnitRadius.toInt()..screenWidth - PacmanUnitRadius.toInt()
-                || pacman.value.position.second.toInt() !in PacmanUnitRadius.toInt()..screenHeight - PacmanUnitRadius.toInt()
+        pacman.value.position.first.toInt() !in PacmanUnitRadius.toInt()..screenWidth - PacmanUnitRadius.toInt() || pacman.value.position.second.toInt() !in PacmanUnitRadius.toInt()..screenHeight - PacmanUnitRadius.toInt()
 
     private fun checkPacmanNearBy(ghost: Ghost): Boolean {
         val xRange = ghost.position.first - 15f..ghost.position.first + 15f
@@ -179,32 +328,32 @@ class PacmanStateImpl : PacmanState {
             val moveDirection = when (ghost.direction) {
                 Directions.LEFT -> {
                     when {
-                        ghost.position.first < 2f && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
-                        ghost.position.first < 2f && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                        ghost.position.first < GhostSize && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                        ghost.position.first < GhostSize && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
                         else -> Directions.LEFT
                     }
                 }
 
                 Directions.RIGHT -> {
                     when {
-                        ghost.position.first > screenWidth - 2f && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
-                        ghost.position.first > screenWidth - 2f && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
+                        ghost.position.first > screenWidth - GhostSize && ghost.position.second > screenHeight * Fraction_1_2 -> Directions.UP
+                        ghost.position.first > screenWidth - GhostSize && ghost.position.second < screenHeight * Fraction_1_2 -> Directions.DOWN
                         else -> Directions.RIGHT
                     }
                 }
 
                 Directions.UP -> {
                     when {
-                        ghost.position.second < 2f && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
-                        ghost.position.second < 2f && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                        ghost.position.second < GhostSize && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                        ghost.position.second < GhostSize && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
                         else -> Directions.UP
                     }
                 }
 
                 Directions.DOWN -> {
                     when {
-                        ghost.position.second > screenHeight - 2f && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
-                        ghost.position.second > screenHeight - 2f && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
+                        ghost.position.second > screenHeight - GhostSize && ghost.position.first > screenWidth * Fraction_1_2 -> Directions.LEFT
+                        ghost.position.second > screenHeight - GhostSize && ghost.position.first < screenWidth * Fraction_1_2 -> Directions.RIGHT
                         else -> Directions.DOWN
                     }
                 }
@@ -224,13 +373,13 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    private fun initializeEnemies() {
+    private fun initializeGhosts() {
         ghosts.value = buildList {
             repeat(NumberOfEnemies) {
                 add(
                     Ghost(
                         id = it,
-                        position = if (it == 0) 4f to 4f else screenWidth - 4f * it.toFloat() to screenHeight - 4f * it.toFloat(),
+                        position = if (it == 0) GhostSize * Fraction_1_4 to GhostSize * Fraction_1_4 else screenWidth - GhostSize * it.toFloat() to screenHeight - GhostSize * it.toFloat(),
                         direction = if (it == 0) Directions.DOWN else Directions.UP,
                         imageId = if (it == 0) R.drawable.ghost_red else R.drawable.ghost_orange,
                         enemyMode = EnemyModes.PATROLLING
@@ -241,14 +390,6 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun canHaveFood(pacman: Pacman): Pair<Int, Int>? {
-        for (food in foodList.value) {
-            val pacmanXRange = pacman.position.first - PacmanUnitRadius + FoodUnitRadius..pacman.position.first + PacmanUnitRadius - FoodUnitRadius
-            val pacmanYRange =
-                pacman.position.second - PacmanUnitRadius + FoodUnitRadius..pacman.position.second + PacmanUnitRadius - FoodUnitRadius
-            if (food.first.toFloat() in pacmanXRange && food.second.toFloat() in pacmanYRange) {
-                return food
-            }
-        }
         return null
     }
 
@@ -264,7 +405,6 @@ class PacmanStateImpl : PacmanState {
         )
         when {
             canHaveFoodResult != null -> {
-                foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
                 score.value += 1
                 pacman.value = newMove
             }
@@ -285,7 +425,6 @@ class PacmanStateImpl : PacmanState {
         )
         when {
             canHaveFoodResult != null -> {
-                foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
                 score.value += 1
                 pacman.value = newMove
             }
@@ -306,7 +445,6 @@ class PacmanStateImpl : PacmanState {
         )
         when {
             canHaveFoodResult != null -> {
-                foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
                 score.value += 1
                 pacman.value = newMove
             }
@@ -327,7 +465,6 @@ class PacmanStateImpl : PacmanState {
         )
         when {
             canHaveFoodResult != null -> {
-                foodList.value = foodList.value.filterNot { it == canHaveFoodResult }
                 score.value += 1
                 pacman.value = newMove
             }
@@ -346,29 +483,9 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun initializeWall() {
-        hWallList.value = buildList {
-            add(Pair(screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_1_4))
-            add(Pair(screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_1_4))
-            add(Pair(screenWidth * Fraction_1_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_3_4))
-            add(Pair(screenWidth * Fraction_3_4 - (WallHeight * Fraction_1_2), screenHeight * Fraction_3_4))
-        }
 
-        vWallList.value = buildList {
-            add(Pair(hWallList.value[0].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[0].second))
-            add(Pair(hWallList.value[1].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[1].second))
-            add(Pair(hWallList.value[2].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[2].second - 5.5f))
-            add(Pair(hWallList.value[3].first + (WallHeight * Fraction_1_2 - WallWidth * Fraction_1_2), hWallList.value[3].second - 5.5f))
-        }
     }
 
-    private fun populateFood() {
-        foodList.value = buildList {
-            repeat(50) {
-                val food = generateFood()
-                if (food != null) add(food)
-            }
-        }
-    }
 
     private fun checkWall(
         point: Pair<Int, Int>, wallList: List<Pair<Float, Float>>
@@ -378,36 +495,8 @@ class PacmanStateImpl : PacmanState {
         }
         return false
     }
-
-    private fun checkDrawOnBoundary(foodPoint: Pair<Int, Int>): Boolean {
-        return foodPoint.first !in 1 until screenWidth - FoodRadius.toInt() && foodPoint.second !in 1 until screenHeight - FoodRadius.toInt()
-    }
-
-    private fun checkDrawOnSelf(foodPoint: Pair<Int, Int>): Boolean {
-        for (food in foodList.value) {
-            if (foodPoint.first in food.first..food.first + FoodRadius.toInt() || food.second in food.second..food.second + FoodRadius.toInt()) return true
-        }
-        return false
-    }
-
-    private fun generateFood(): Pair<Int, Int>? {
-        val randomPoint = nextInt(screenWidth) to nextInt(screenHeight)
-        return when {
-            checkWall(randomPoint, hWallList.value) -> null
-            checkWall(randomPoint, vWallList.value) -> null
-            checkDrawOnBoundary(randomPoint) -> null
-            checkDrawOnSelf(randomPoint) -> null
-            else -> randomPoint
-        }
-    }
 }
 
-enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
-    LEFT(Pair(-1f, 0f), -180f),
-    RIGHT(Pair(1f, 0f), 0f),
-    UP(Pair(0f, -1f), -90f),
-    DOWN(Pair(0f, 1f), 90f),
-}
 
 enum class EnemyModes {
     PATROLLING, CHASING, FLEEING

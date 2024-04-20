@@ -41,18 +41,19 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
+import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
 import com.syrous.pacman.ui.theme.PressStartFontFamily
 import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
+import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.SmallHeight
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.convertFloatToDisplayPos
-import com.syrous.pacman.util.convertIntToDisplayPos
 
 sealed class GamePlayScreenAction {
     data object MoveUp : GamePlayScreenAction()
@@ -133,7 +134,6 @@ class GamePlay(
             animatableCutAngle.animateTo(
                 targetValue = CutAngle,
                 animationSpec = keyframes {
-                    durationMillis = 400
                     CutAngle at 0 using LinearEasing
                     EatAngle at 80 using LinearEasing
                     0f at 100 using LinearEasing
@@ -163,8 +163,6 @@ class GamePlay(
 
     @Composable
     private fun PacmanScreenLayout(modifier: Modifier = Modifier) {
-        val vWallList = gameState.vWallList.collectAsState().value
-        val hWallList = gameState.hWallList.collectAsState().value
         val foodList = gameState.foodList.collectAsState().value
 
         Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
@@ -172,27 +170,25 @@ class GamePlay(
                 coordinates.size.width, coordinates.size.height
             )
         }) {
-            for (wall in hWallList) {
-                drawWall(wall, isVWall = false, wallColor!!)
-            }
+            drawFood(foodList)
+        }
+    }
 
-            for (wall in vWallList) {
-                drawWall(wall, isVWall = true, wallColor!!)
-            }
-
-            for (food in foodList) {
+    private fun DrawScope.drawFood(foodList: Map<Int, Map<Int, Food>>) {
+        for (x in foodList.keys) {
+            val col = foodList[x]
+            for (y in col!!.keys) {
                 drawCircle(
                     color = foodColor!!,
-                    radius = 5.dp.toPx(),
+                    radius = 1.dp.toPx(),
                     center = Offset(
-                        food.convertIntToDisplayPos().first,
-                        food.convertIntToDisplayPos().second
+                        x.toFloat(),
+                        y.toFloat()
                     )
                 )
             }
         }
     }
-
 
     private fun DrawScope.drawGhost(ghost: Ghost, ghostImageList: List<ImageBitmap>) {
         drawImage(
@@ -203,7 +199,7 @@ class GamePlay(
                 ghost.position.convertFloatToDisplayPos().first.toInt(),
                 ghost.position.convertFloatToDisplayPos().second.toInt()
             ),
-            dstSize = IntSize(50.dp.toPx().toInt(), 50.dp.toPx().toInt()),
+            dstSize = IntSize(GhostSize, GhostSize),
         )
     }
 
