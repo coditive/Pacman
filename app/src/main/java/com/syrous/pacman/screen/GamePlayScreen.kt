@@ -180,7 +180,7 @@ class GamePlay(
             for (y in col!!.keys) {
                 drawCircle(
                     color = foodColor!!,
-                    radius = 5.dp.toPx(),
+                    radius = 1.dp.toPx(),
                     center = Offset(
                         x.toFloat(),
                         y.toFloat()

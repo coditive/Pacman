@@ -12,7 +12,8 @@ import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
 import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.NumberOfEnemies
-import com.syrous.pacman.util.PATHS_WITH_FOOD
+import com.syrous.pacman.util.PATHS
+import com.syrous.pacman.util.PATH_WITHOUT_FOOD
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.PacmanUnitRadius
 import com.syrous.pacman.util.UnitScale
@@ -54,7 +55,7 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun determinePlayingFieldSize() {
-        for (p in PATHS_WITH_FOOD) {
+        for (p in PATHS) {
             if (p.horizontalLength > 0) {
                 val x = p.x + p.horizontalLength - 1
                 if (x > gameWidth) {
@@ -92,7 +93,7 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun preparePaths() {
-        for (p in PATHS_WITH_FOOD) {
+        for (p in PATHS) {
             val startX = p.x * UnitScale
             val startY = p.y * UnitScale
             Log.d("PacmanStateImpl", "prepare path -> path -> $p ")
@@ -120,19 +121,18 @@ class PacmanStateImpl : PacmanState {
                 playField[x]!![endY] = prepareTile(x, endY, p.tunnel, playField[x]!![endY]!!.food)
             }
         }
-
-
-//        for (p in PATH_WITHOUT_FOOD) {
-//            if (p.horizontalLength != 0) {
-//                for(x in p.x * UnitScale..(p.x + p.horizontalLength - 1) * UnitScale step UnitScale) {
-//
-//                }
-//            } else {
-//                for(y in p.y * UnitScale..(p.y + p.verticalLength - 1) * UnitScale step UnitScale) {
-//
-//                }
-//            }
-//        }
+        
+        for (p in PATH_WITHOUT_FOOD) {
+            if (p.horizontalLength != 0) {
+                for(x in p.x * UnitScale..(p.x + p.horizontalLength - 1) * UnitScale step UnitScale) {
+                    playField[x]!![p.y * UnitScale] = playField[x]!![p.y * UnitScale]!!.copy(food = Food.NONE)
+                }
+            } else {
+                for(y in p.y * UnitScale..(p.y + p.verticalLength - 1) * UnitScale step UnitScale) {
+                    playField[p.x * UnitScale]!![y] = playField[p.x * UnitScale]!![y]!!.copy(food = Food.NONE)
+                }
+            }
+        }
 
     }
 
