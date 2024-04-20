@@ -96,7 +96,7 @@ class PacmanStateImpl : PacmanState {
         for (p in PATHS) {
             val startX = p.x * UnitScale
             val startY = p.y * UnitScale
-            Log.d("PacmanStateImpl", "prepare path -> path -> $p ")
+            Log.d("PacmanStateImpl", "prepare path -> path -> $p")
             if (p.horizontalLength > 0) {
                 val endX = (p.x + p.horizontalLength - 1) * UnitScale
                 val y = p.y * UnitScale
@@ -160,7 +160,6 @@ class PacmanStateImpl : PacmanState {
         Log.d("PacmanStateImpl", "foodList -> $food")
         foodList.value = food
     }
-
 
     private fun prepareAllowedDirections() {
         for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
