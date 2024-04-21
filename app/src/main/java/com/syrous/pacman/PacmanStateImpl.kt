@@ -11,12 +11,14 @@ import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
 import com.syrous.pacman.util.GhostSize
+import com.syrous.pacman.util.HORIZONTAL_WALL_LIST
 import com.syrous.pacman.util.NumberOfEnemies
 import com.syrous.pacman.util.PATHS
 import com.syrous.pacman.util.PATH_WITHOUT_FOOD
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.PacmanUnitRadius
 import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.VERTICAL_WALL_LIST
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.plus
@@ -36,6 +38,8 @@ class PacmanStateImpl : PacmanState {
     override val pacman =
         MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
     override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
+    override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
+    override val vWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val foodList = MutableStateFlow<MutableMap<Int, MutableMap<Int, Food>>>(mutableMapOf())
     override val score = MutableStateFlow(0)
     override val ghosts = MutableStateFlow<List<Ghost>>(listOf())
@@ -44,9 +48,11 @@ class PacmanStateImpl : PacmanState {
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
+            Log.d("PacmanStateImpl", "Pacman updateScreen called!!")
             screenWidth = width
             screenHeight = height
             determinePlayingFieldSize()
+            buildPacmanWalls()
             initializePlayField()
             preparePaths()
             prepareAllowedDirections()
@@ -55,32 +61,65 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun determinePlayingFieldSize() {
-        for (p in PATHS) {
+        for (p in HORIZONTAL_WALL_LIST + VERTICAL_WALL_LIST) {
             if (p.horizontalLength > 0) {
                 val x = p.x + p.horizontalLength - 1
                 if (x > gameWidth) {
-                    gameWidth = x
+                    gameWidth = x.toInt()
                 }
             } else {
                 val y = p.y + p.verticalLength - 1
                 if (y > gameHeight) {
-                    gameHeight = y
+                    gameHeight = y.toInt()
                 }
             }
         }
         Log.d("PacmanStateImpl", "Game Dimension -> x -> $gameWidth, y -> $gameHeight")
     }
 
+    private fun buildPacmanWalls() {
+        Log.d("PacmanStateImpl", "BuildPacmanWalls Called!!!")
+        // Additional UnitScale to round up the point
+        val scaleFactorX = (screenWidth / (gameWidth * UnitScale)) * UnitScale
+        val scaleFactorY = (screenHeight / (gameHeight * UnitScale)) * UnitScale
+        Log.d("PacmanStateImpl", "buildPacmanWall -> scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
+        val vWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
+        val hWallPointList = hashMapOf<Pair<Float,Float>, Pair<Float, Float>>()
+        for (wall in VERTICAL_WALL_LIST + HORIZONTAL_WALL_LIST) {
+            if (wall.horizontalLength > 0) {
+                val x = wall.x + wall.horizontalLength - 1
+                hWallPointList[Pair(
+                    wall.x.toFloat() * scaleFactorX,
+                    wall.y.toFloat() * scaleFactorY
+                )] = Pair(x.toFloat() * scaleFactorX, wall.y.toFloat() * scaleFactorY)
+            } else {
+                val y = wall.y + wall.verticalLength - 1
+                vWallPointList[Pair(
+                    wall.x.toFloat() * scaleFactorX,
+                    wall.y.toFloat() * scaleFactorY
+                )] = Pair(wall.x.toFloat() * scaleFactorX, y.toFloat() * scaleFactorY)
+            }
+        }
+        Log.d("PacmanStateImpl", "wallList will be updated")
+        vWallList.value = vWallPointList
+        hWallList.value = hWallPointList
+        Log.d("PacmanStateImpl", "wallList is updated!!!")
+    }
+
     private fun initializePlayField() {
         for (x in 0..gameWidth + 1) {
             val col = hashMapOf<Int, Tile>()
             for (y in 0..gameHeight + 1) {
-                val tile = Tile(isIntersection = false, isPath = false, isTunnel = false, food = Food.NONE)
+                val tile =
+                    Tile(isIntersection = false, isPath = false, isTunnel = false, food = Food.NONE)
                 col[y * UnitScale] = tile
             }
             playField[x * UnitScale] = col
         }
-        Log.d("PacmanStateImpl", "playField -> x -> ${playField.entries}, y -> ${playField[0]!!.entries} ")
+        Log.d(
+            "PacmanStateImpl",
+            "playField -> x -> ${playField.entries}, y -> ${playField[0]!!.entries} "
+        )
     }
 
     private fun prepareTile(x: Int, y: Int, tunnel: Boolean, food: Food): Tile {
@@ -96,7 +135,7 @@ class PacmanStateImpl : PacmanState {
         for (p in PATHS) {
             val startX = p.x * UnitScale
             val startY = p.y * UnitScale
-            Log.d("PacmanStateImpl", "prepare path -> path -> $p ")
+            Log.d("PacmanStateImpl", "prepare path -> path -> $p")
             if (p.horizontalLength > 0) {
                 val endX = (p.x + p.horizontalLength - 1) * UnitScale
                 val y = p.y * UnitScale
@@ -121,15 +160,17 @@ class PacmanStateImpl : PacmanState {
                 playField[x]!![endY] = prepareTile(x, endY, p.tunnel, playField[x]!![endY]!!.food)
             }
         }
-        
+
         for (p in PATH_WITHOUT_FOOD) {
             if (p.horizontalLength != 0) {
-                for(x in p.x * UnitScale..(p.x + p.horizontalLength - 1) * UnitScale step UnitScale) {
-                    playField[x]!![p.y * UnitScale] = playField[x]!![p.y * UnitScale]!!.copy(food = Food.NONE)
+                for (x in p.x * UnitScale..(p.x + p.horizontalLength - 1) * UnitScale step UnitScale) {
+                    playField[x]!![p.y * UnitScale] =
+                        playField[x]!![p.y * UnitScale]!!.copy(food = Food.NONE)
                 }
             } else {
-                for(y in p.y * UnitScale..(p.y + p.verticalLength - 1) * UnitScale step UnitScale) {
-                    playField[p.x * UnitScale]!![y] = playField[p.x * UnitScale]!![y]!!.copy(food = Food.NONE)
+                for (y in p.y * UnitScale..(p.y + p.verticalLength - 1) * UnitScale step UnitScale) {
+                    playField[p.x * UnitScale]!![y] =
+                        playField[p.x * UnitScale]!![y]!!.copy(food = Food.NONE)
                 }
             }
         }
@@ -147,11 +188,11 @@ class PacmanStateImpl : PacmanState {
         val food = foodList.value
         val scaleFactorX = (screenWidth / (gameWidth * UnitScale))
         val scaleFactorY = (screenHeight / (gameHeight * UnitScale))
-        Log.d("PacmanStateImpl", "scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
-        for(x in UnitScale..gameWidth * UnitScale step UnitScale) {
+        Log.d("PacmanStateImpl", "createPellets -> scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
+        for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
             val col = mutableMapOf<Int, Food>()
-            for(y in UnitScale..gameHeight * UnitScale step UnitScale) {
-                if(playField[x]!![y]!!.food != Food.NONE) {
+            for (y in UnitScale..gameHeight * UnitScale step UnitScale) {
+                if (playField[x]!![y]!!.food != Food.NONE) {
                     col[y * scaleFactorY] = Food.PELLET
                 }
             }
@@ -160,7 +201,6 @@ class PacmanStateImpl : PacmanState {
         Log.d("PacmanStateImpl", "foodList -> $food")
         foodList.value = food
     }
-
 
     private fun prepareAllowedDirections() {
         for (x in UnitScale..gameWidth * UnitScale step UnitScale) {

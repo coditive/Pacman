@@ -50,9 +50,6 @@ import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
 import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
-import com.syrous.pacman.util.SmallHeight
-import com.syrous.pacman.util.WallHeight
-import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.convertFloatToDisplayPos
 
 sealed class GamePlayScreenAction {
@@ -200,24 +197,6 @@ class GamePlay(
                 ghost.position.convertFloatToDisplayPos().second.toInt()
             ),
             dstSize = IntSize(GhostSize, GhostSize),
-        )
-    }
-
-    private fun DrawScope.drawWall(
-        position: Pair<Float, Float>,
-        isVWall: Boolean,
-        wallColor: Color
-    ) {
-        drawRect(
-            color = wallColor,
-            topLeft = Offset(
-                position.convertFloatToDisplayPos().first,
-                position.convertFloatToDisplayPos().second
-            ),
-            size = Size(
-                if (isVWall) WallWidth.toFloat() else WallHeight.toFloat(),
-                if (isVWall) SmallHeight.toFloat() else WallWidth.toFloat()
-            )
         )
     }
 
