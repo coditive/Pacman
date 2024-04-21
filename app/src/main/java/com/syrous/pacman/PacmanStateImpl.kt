@@ -79,10 +79,8 @@ class PacmanStateImpl : PacmanState {
 
     private fun buildPacmanWalls() {
         Log.d("PacmanStateImpl", "BuildPacmanWalls Called!!!")
-        // Additional UnitScale to round up the point
-        val scaleFactorX = (screenWidth / (gameWidth * UnitScale)) * UnitScale
-        val scaleFactorY = (screenHeight / (gameHeight * UnitScale)) * UnitScale
-        Log.d("PacmanStateImpl", "buildPacmanWall -> scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
+        val scaleFactorX = (screenWidth / gameWidth)
+        val scaleFactorY = (screenHeight / gameHeight)
         val vWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
         val hWallPointList = hashMapOf<Pair<Float,Float>, Pair<Float, Float>>()
         for (wall in VERTICAL_WALL_LIST + HORIZONTAL_WALL_LIST) {
@@ -188,7 +186,7 @@ class PacmanStateImpl : PacmanState {
         val food = foodList.value
         val scaleFactorX = (screenWidth / (gameWidth * UnitScale))
         val scaleFactorY = (screenHeight / (gameHeight * UnitScale))
-        Log.d("PacmanStateImpl", "createPellets -> scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
+        Log.d("PacmanStateImpl", "scaleFactorX -> $scaleFactorX, scaleFactorY -> $scaleFactorY")
         for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
             val col = mutableMapOf<Int, Food>()
             for (y in UnitScale..gameHeight * UnitScale step UnitScale) {
