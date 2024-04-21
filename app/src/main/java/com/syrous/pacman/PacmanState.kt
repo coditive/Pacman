@@ -11,7 +11,8 @@ interface PacmanState {
 
     val pacman: StateFlow<Pacman>
     val playField: Map<Int, Map<Int, Tile>>
-    val wallList: StateFlow<Map<Pair<Float, Float>, Pair<Float, Float>>>
+    val hWallList: StateFlow<Map<Pair<Float, Float>, Pair<Float, Float>>>
+    val vWallList: StateFlow<Map<Pair<Float, Float>, Pair<Float, Float>>>
     val foodList: StateFlow<Map<Int, Map<Int, Food>>>
     val score: StateFlow<Int>
     val ghosts: StateFlow<List<Ghost>>

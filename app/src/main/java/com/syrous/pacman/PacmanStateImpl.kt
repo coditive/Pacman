@@ -11,13 +11,14 @@ import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
 import com.syrous.pacman.util.GhostSize
+import com.syrous.pacman.util.HORIZONTAL_WALL_LIST
 import com.syrous.pacman.util.NumberOfEnemies
 import com.syrous.pacman.util.PATHS
 import com.syrous.pacman.util.PATH_WITHOUT_FOOD
 import com.syrous.pacman.util.PacmanRadius
 import com.syrous.pacman.util.PacmanUnitRadius
 import com.syrous.pacman.util.UnitScale
-import com.syrous.pacman.util.WALL_LIST
+import com.syrous.pacman.util.VERTICAL_WALL_LIST
 import com.syrous.pacman.util.WallHeight
 import com.syrous.pacman.util.WallWidth
 import com.syrous.pacman.util.plus
@@ -37,7 +38,8 @@ class PacmanStateImpl : PacmanState {
     override val pacman =
         MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
     override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
-    override val wallList = MutableStateFlow(mutableMapOf<Pair<Float, Float>, Pair<Float, Float>>())
+    override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
+    override val vWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val foodList = MutableStateFlow<MutableMap<Int, MutableMap<Int, Food>>>(mutableMapOf())
     override val score = MutableStateFlow(0)
     override val ghosts = MutableStateFlow<List<Ghost>>(listOf())
@@ -46,6 +48,7 @@ class PacmanStateImpl : PacmanState {
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
+            Log.d("PacmanStateImpl", "Pacman updateScreen called!!")
             screenWidth = width
             screenHeight = height
             determinePlayingFieldSize()
@@ -58,7 +61,7 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun determinePlayingFieldSize() {
-        for (p in WALL_LIST) {
+        for (p in HORIZONTAL_WALL_LIST + VERTICAL_WALL_LIST) {
             if (p.horizontalLength > 0) {
                 val x = p.x + p.horizontalLength - 1
                 if (x > gameWidth) {
@@ -75,23 +78,30 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun buildPacmanWalls() {
+        Log.d("PacmanStateImpl", "BuildPacmanWalls Called!!!")
         val scaleFactorX = (screenWidth / gameWidth)
         val scaleFactorY = (screenHeight / gameHeight)
-        for (wall in WALL_LIST) {
+        val vWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
+        val hWallPointList = hashMapOf<Pair<Float,Float>, Pair<Float, Float>>()
+        for (wall in VERTICAL_WALL_LIST + HORIZONTAL_WALL_LIST) {
             if (wall.horizontalLength > 0) {
                 val x = wall.x + wall.horizontalLength - 1
-                wallList.value[Pair(
+                hWallPointList[Pair(
                     wall.x.toFloat() * scaleFactorX,
                     wall.y.toFloat() * scaleFactorY
                 )] = Pair(x.toFloat() * scaleFactorX, wall.y.toFloat() * scaleFactorY)
             } else {
                 val y = wall.y + wall.verticalLength - 1
-                wallList.value[Pair(
+                vWallPointList[Pair(
                     wall.x.toFloat() * scaleFactorX,
                     wall.y.toFloat() * scaleFactorY
                 )] = Pair(wall.x.toFloat() * scaleFactorX, y.toFloat() * scaleFactorY)
             }
         }
+        Log.d("PacmanStateImpl", "wallList will be updated")
+        vWallList.value = vWallPointList
+        hWallList.value = hWallPointList
+        Log.d("PacmanStateImpl", "wallList is updated!!!")
     }
 
     private fun initializePlayField() {

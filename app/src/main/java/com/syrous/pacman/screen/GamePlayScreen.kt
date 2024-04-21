@@ -116,6 +116,7 @@ class GamePlay(
     @Composable
     fun PacmanPlayer(modifier: Modifier = Modifier) {
         Box(modifier = modifier) {
+            Log.d("GamePlayScreen", "PacmanPlayerBox called!!!")
             PacmanGameWalls(modifier = Modifier.fillMaxSize())
             PacmanScreenLayout(modifier = Modifier.fillMaxSize())
             PacmanActorComposable(modifier = Modifier.fillMaxSize())
@@ -124,15 +125,24 @@ class GamePlay(
 
     @Composable
     private fun PacmanGameWalls(modifier: Modifier = Modifier) {
-        val gameWalls = gameState.wallList.collectAsState().value
-        Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
-            gameState.updateScreenDimensions(
-                coordinates.size.width, coordinates.size.height
-            )
-        }) {
-            for(wall in gameWalls.keys) {
+        val vGameWalls = gameState.vWallList.collectAsState().value
+        val hGameWalls = gameState.hWallList.collectAsState().value
+        Log.d("GamePlayScreen", "PacmanGameWall before canvas called!!!")
+        Canvas(modifier = modifier) {
+            for(wall in vGameWalls.keys) {
                 val(x1, y1) = wall
-                val(x2, y2) = gameWalls[wall]!!
+                val(x2, y2) = vGameWalls[wall]!!
+                drawLine(
+                    color = wallColor!!,
+                    start = Offset(x1, y1),
+                    end = Offset(x2, y2),
+                    strokeWidth = 5f
+                )
+            }
+
+            for(wall in hGameWalls.keys) {
+                val(x1, y1) = wall
+                val(x2, y2) = hGameWalls[wall]!!
                 drawLine(
                     color = wallColor!!,
                     start = Offset(x1, y1),
