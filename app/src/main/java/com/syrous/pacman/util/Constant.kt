@@ -6,20 +6,15 @@ import com.syrous.pacman.model.WallPath.Companion.createVerticalPath
 
 
 const val UnitScale = 9
-const val WallWidth = 10
-const val WallHeight = 20
-const val SmallHeight = 15
 const val PacmanRadius = 25f
-const val FoodRadius = 5f
+const val FoodRadius = 1
+const val EnergizerRadius = 5
 
 const val FoodUnitRadius = FoodRadius
 const val PacmanUnitRadius = PacmanRadius
 
 const val CutAngle = 40f
 const val EatAngle = 60f
-
-const val TileWidth = 9
-const val TileHeight = 9
 
 const val NumberOfEnemies = 2
 const val GhostSize = 100
@@ -186,7 +181,6 @@ val VERTICAL_WALL_LIST = listOf(
     createVerticalPath(26, 3, 3),
 )
 
-
 val HORIZONTAL_WALL_LIST = listOf(
     createHorizontalPath(1, 10, 6),
     createHorizontalPath(0.5, 10.5, 6.0),
@@ -276,3 +270,13 @@ val HORIZONTAL_WALL_LIST = listOf(
     createHorizontalPath(23, 5, 4),
 )
 
+val ENERGIZER_POSITION = listOf(
+    Pair(2, 4),
+    Pair(2, 24),
+    Pair(2, 30),
+    Pair(10, 9),
+    Pair(19, 9),
+    Pair(27, 24),
+    Pair(27, 4),
+    Pair(27, 30)
+)
