@@ -35,9 +35,20 @@ class PacmanStateImpl : PacmanState {
     private var scaleFactorX = 0
     private var scaleFactorY = 0
 
+    private var totalFood = 0
+    private var foodEaten = 0
 
     override val pacman =
-        MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0, 0), Directions.RIGHT, Directions.RIGHT))
+        MutableStateFlow(
+            Pacman(
+                Pair(0f, 0f),
+                Pair(0, 0),
+                Pair(0, 0),
+                Pair(0f, 0f),
+                Directions.RIGHT,
+                Directions.RIGHT
+            )
+        )
     override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val vWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
@@ -49,7 +60,6 @@ class PacmanStateImpl : PacmanState {
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
-            Log.d("PacmanStateImpl", "Pacman updateScreen called!!")
             screenWidth = width
             screenHeight = height
             determinePlayingFieldSize()
@@ -193,6 +203,7 @@ class PacmanStateImpl : PacmanState {
                 if (Pair(x / UnitScale, y / UnitScale) in ENERGIZER_POSITION) {
                     col[y * scaleFactorY] = Food.ENERGIZER
                 }
+                totalFood += 1
             }
             food[x * scaleFactorX] = col
         }
@@ -236,24 +247,32 @@ class PacmanStateImpl : PacmanState {
             val pos = pacman.value.position
             val dir = pacman.value.direction
             val tilePos = pacman.value.tilePos
-            val pacX = pos.first.div(scaleFactorX) + dir.move.first
-            val pacY = pos.second.div(scaleFactorY) + dir.move.second
 
-            pacman.value =
-                pacman.value.copy(position = Pair(pacX * scaleFactorX, pacY * scaleFactorY))
+            val pacX = pos.first + dir.move.first
+            val pacY = pos.second + dir.move.second
+            val newPos = Pair(pacX, pacY)
+
+            pacman.value = pacman.value.copy(position = newPos, screenPos = Pair(newPos.first.div(
+                UnitScale) * scaleFactorX, newPos.second.div(UnitScale) * scaleFactorY))
 
             val imaginaryX = pacX / UnitScale
             val imaginaryY = pacY / UnitScale
-            val newTile = Pair(
-                round(imaginaryX).toInt() * UnitScale,
-                round(imaginaryY).toInt() * UnitScale
+            val nextTile = Pair(
+                round(imaginaryX).toInt(),
+                round(imaginaryY).toInt()
             )
+            val enteredTile = Pair(
+                floor(imaginaryX) * UnitScale,
+                floor(imaginaryY) * UnitScale
+            )
+            Log.d("PacmanStateImpl", "step fun -> After  -> pos -> $pos, newPos -> $newPos, imaginary => $imaginaryX, $imaginaryY, newTile -> $nextTile, tilePos => $tilePos, enteredTile => $enteredTile")
 
-            if (newTile.first != tilePos.first || newTile.second != tilePos.second) {
-                pacmanEnteringTile(newTile)
-            } else {
-                val tile = Pair(floor(imaginaryX).toInt() * UnitScale, floor(imaginaryY).toInt() * UnitScale)
-                if(tile == tilePos) {
+            when {
+                nextTile.first != tilePos.first || nextTile.second != tilePos.second -> {
+                    pacmanEnteringTile(nextTile)
+                }
+
+                enteredTile == newPos -> {
                     pacmanEnteredTile()
                 }
             }
@@ -261,12 +280,55 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun pacmanEnteringTile(tile: Pair<Int, Int>) {
-        Log.d("PacmanStateImpl", "Entering new Tile => $tile")
-        pacman.value = pacman.value.copy(tilePos = tile)
+        val actualTile = Pair(tile.first * UnitScale, tile.second * UnitScale)
+        adjustOverShootOnEnteringTile(actualTile)
+        if (canHaveFood(actualTile)) {
+            haveFood(actualTile)
+        }
+        Log.d("PacmanStateImpl", "pacmanEnteringTile pacman -> ${pacman.value} ")
+        pacman.value = pacman.value.copy(tilePos = tile, lastGoodTilePos = tile)
+    }
+
+    private fun canHaveFood(tile: Pair<Int, Int>): Boolean =
+        playField[tile.first]!![tile.second]!!.food != Food.NONE
+
+    private fun haveFood(tile: Pair<Int, Int>) {
+        val adjustedScaleFactorX = scaleFactorX / UnitScale
+        val adjustedScaleFactorY = scaleFactorY / UnitScale
+        val listOfAvailableFood = foodList.value.toMutableMap()
+        playField[tile.first]!![tile.second] =
+            playField[tile.first]!![tile.second]!!.copy(food = Food.NONE)
+        Log.d("PacmanStateImpl", "tile -> ${tile.first * adjustedScaleFactorX}, ${tile.second * adjustedScaleFactorY}  listOfAvailableFood -> ${listOfAvailableFood[tile.first * adjustedScaleFactorX]!![tile.second * adjustedScaleFactorY]}")
+        listOfAvailableFood[tile.first * adjustedScaleFactorX]!!.remove(tile.second * adjustedScaleFactorY)
+        Log.d("PacmanStateImpl", "after remove tile -> ${tile.first * adjustedScaleFactorX}, ${tile.second * adjustedScaleFactorY}  listOfAvailableFood -> ${listOfAvailableFood[tile.first * adjustedScaleFactorX]!![tile.second * adjustedScaleFactorY]}")
+        updateScore(playField[tile.first]!![tile.second]!!.food)
+        foodList.value = listOfAvailableFood
+    }
+
+
+    private fun updateScore(food: Food) {
+        foodEaten += 1
+        score.value = foodEaten
+    }
+
+    private fun adjustOverShootOnEnteringTile(tile: Pair<Int, Int>) {
+        if (playField[tile.first]!![tile.second]!!.isPath.not()) {
+            val lastGoodTile = pacman.value.lastGoodTilePos
+           Log.d("PacmanStateImpl", "Before lastGoodTile -> $lastGoodTile, pacman -> ${pacman.value}")
+            pacman.value = pacman.value.copy(
+                position = Pair(
+                    lastGoodTile.first * UnitScale.toFloat(),
+                    lastGoodTile.second * UnitScale.toFloat()
+                ),
+                tilePos = lastGoodTile,
+                direction = Directions.NONE
+            )
+            Log.d("PacmanStateImpl", "After lastGoodTile -> $lastGoodTile, pacman -> ${pacman.value}")
+        }
     }
 
     private fun pacmanEnteredTile() {
-        Log.d("PacmanStateImpl", "Entered new Tile!!!")
+        Log.d("PacmanStateImpl", "pacmanEnteredTile -> $$")
     }
 
     private suspend fun updateEnemyPositionAfterLoop() {
@@ -417,95 +479,29 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    private fun canHaveFood(pacman: Pacman): Pair<Int, Int>? {
-        return null
-    }
-
     override fun moveUp() {
-//        val canHaveFoodResult = canHaveFood(pacman.value)
-//        val prevPos = pacman.value.position
-//        val prevDir = pacman.value.direction
-//        val newMove = Pacman(
-//            position = pacman.value.position + Directions.UP.move,
-//            tilePos = prevPos,
-//            direction = Directions.UP,
-//            previousDirection = prevDir
-//        )
-//        when {
-//            canHaveFoodResult != null -> {
-//                score.value += 1
-//                pacman.value = newMove
-//            }
-//
-//            else -> pacman.value = newMove
-//        }
+
     }
 
     override fun moveDown() {
-//        val canHaveFoodResult = canHaveFood(pacman.value)
-//        val prevPos = pacman.value.position
-//        val prevDir = pacman.value.direction
-//        val newMove = Pacman(
-//            position = pacman.value.position + Directions.DOWN.move,
-//            tilePos = prevPos,
-//            direction = Directions.DOWN,
-//            previousDirection = prevDir
-//        )
-//        when {
-//            canHaveFoodResult != null -> {
-//                score.value += 1
-//                pacman.value = newMove
-//            }
-//
-//            else -> pacman.value = newMove
-//        }
+
     }
 
     override fun moveLeft() {
-//        val canHaveFoodResult = canHaveFood(pacman.value)
-//        val prevPos = pacman.value.position
-//        val prevDir = pacman.value.direction
-//        val newMove = Pacman(
-//            position = pacman.value.position + Directions.LEFT.move,
-//            tilePos = prevPos,
-//            direction = Directions.LEFT,
-//            previousDirection = prevDir
-//        )
-//        when {
-//            canHaveFoodResult != null -> {
-//                score.value += 1
-//                pacman.value = newMove
-//            }
-//
-//            else -> pacman.value = newMove
-//        }
+
     }
 
     override fun moveRight() {
-//        val canHaveFoodResult = canHaveFood(pacman.value)
-//        val prevPos = pacman.value.position
-//        val prevDir = pacman.value.direction
-//        val newMove = Pacman(
-//            position = pacman.value.position + Directions.RIGHT.move,
-//            tilePos = prevPos,
-//            direction = Directions.RIGHT,
-//            previousDirection = prevDir
-//        )
-//        when {
-//            canHaveFoodResult != null -> {
-//                score.value += 1
-//                pacman.value = newMove
-//            }
-//
-//            else -> pacman.value = newMove
-//        }
+
     }
 
     private fun initializePacman() {
         pacman.value = Pacman(
-            position = Pair(15f * scaleFactorX, 24f * scaleFactorY),
-            tilePos = Pair(15, 24),
+            position = Pair(14f * UnitScale, 24f * UnitScale),
+            tilePos = Pair(14, 24),
+            screenPos = Pair(14f * scaleFactorX, 24f * scaleFactorY),
 //            currentSpeed = CurrentSpeed.NORMAL,
+            lastGoodTilePos = Pair(14, 24),
             direction = Directions.RIGHT,
 //            fullSpeed = 0.8f,
 //            dotEatingSpeed = 0.71f,

@@ -243,8 +243,8 @@ class GamePlay(
         rotate(
             degrees = pacman.direction.angle,
             pivot = Offset(
-                pacman.position.first,
-                pacman.position.second
+                pacman.screenPos.first,
+                pacman.screenPos.second
             )
         ) {
             drawArc(
@@ -252,8 +252,8 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.position.first - radius,
-                    pacman.position.second - radius
+                    pacman.screenPos.first - radius,
+                    pacman.screenPos.second - radius
                 ),
                 size = Size(radius * 2, radius * 2),
                 useCenter = true,
