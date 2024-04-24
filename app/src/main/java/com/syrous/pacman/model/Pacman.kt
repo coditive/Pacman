@@ -11,5 +11,4 @@ data class Pacman (
 //    val dotEatingSpeed: Float,
 //    val fullSpeed: Float,
     val direction: Directions,
-    val previousDirection: Directions
 )
