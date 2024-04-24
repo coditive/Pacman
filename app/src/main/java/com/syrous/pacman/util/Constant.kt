@@ -80,16 +80,16 @@ val PATHS = listOf(
 )
 
 val PATH_WITHOUT_FOOD = listOf(
-    Path.createVerticalPath(10, 12, 10),
-    Path.createVerticalPath(19, 12, 10),
-    Path.createHorizontalPath(10, 12, 4),
-    Path.createHorizontalPath(16, 12, 4),
+    Path.createVerticalPath(10, 12, 9),
+    Path.createVerticalPath(19, 12, 9),
+    Path.createHorizontalPath(10, 12, 3),
+    Path.createHorizontalPath(16, 12, 3),
     Path.createVerticalPath(13, 9, 4),
     Path.createVerticalPath(16, 9, 4),
-    Path.createTunnelPath(0, 15, 8),
+    Path.createTunnelPath(0, 15, 7),
     Path.createHorizontalPath(7, 15, 4),
     Path.createHorizontalPath(19, 15, 4),
-    Path.createTunnelPath(22, 15, 8),
+    Path.createTunnelPath(23, 15, 7),
     Path.createHorizontalPath(10, 18, 10),
     Path.createHorizontalPath(13, 12, 4),
     Path.createHorizontalPath(13, 24, 4),
