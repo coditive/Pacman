@@ -48,9 +48,10 @@ import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
 import com.syrous.pacman.ui.theme.PressStartFontFamily
 import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
+import com.syrous.pacman.util.EnergizerRadius
+import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
-import com.syrous.pacman.util.convertFloatToDisplayPos
 
 sealed class GamePlayScreenAction {
     data object MoveUp : GamePlayScreenAction()
@@ -126,9 +127,9 @@ class GamePlay(
         val hGameWalls = gameState.hWallList.collectAsState().value
         Log.d("GamePlayScreen", "PacmanGameWall before canvas called!!!")
         Canvas(modifier = modifier) {
-            for(wall in vGameWalls.keys) {
-                val(x1, y1) = wall
-                val(x2, y2) = vGameWalls[wall]!!
+            for (wall in vGameWalls.keys) {
+                val (x1, y1) = wall
+                val (x2, y2) = vGameWalls[wall]!!
                 drawLine(
                     color = wallColor!!,
                     start = Offset(x1, y1),
@@ -137,9 +138,9 @@ class GamePlay(
                 )
             }
 
-            for(wall in hGameWalls.keys) {
-                val(x1, y1) = wall
-                val(x2, y2) = hGameWalls[wall]!!
+            for (wall in hGameWalls.keys) {
+                val (x1, y1) = wall
+                val (x2, y2) = hGameWalls[wall]!!
                 drawLine(
                     color = wallColor!!,
                     start = Offset(x1, y1),
@@ -209,7 +210,7 @@ class GamePlay(
             for (y in col!!.keys) {
                 drawCircle(
                     color = foodColor!!,
-                    radius = 1.dp.toPx(),
+                    radius = if (foodList[x]!![y]!! == Food.PELLET) FoodRadius.dp.toPx() else if (foodList[x]!![y]!! == Food.ENERGIZER) EnergizerRadius.dp.toPx() else 0f,
                     center = Offset(
                         x.toFloat(),
                         y.toFloat()
@@ -225,8 +226,8 @@ class GamePlay(
             srcOffset = IntOffset.Zero,
             srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
             dstOffset = IntOffset(
-                ghost.position.convertFloatToDisplayPos().first.toInt(),
-                ghost.position.convertFloatToDisplayPos().second.toInt()
+                ghost.position.first.toInt(),
+                ghost.position.second.toInt()
             ),
             dstSize = IntSize(GhostSize, GhostSize),
         )
@@ -238,11 +239,12 @@ class GamePlay(
         animatedCutAngle: Float,
         pacman: Pacman
     ) {
+        Log.d("GamePlayScreen","pacman position -> $pacman")
         rotate(
-            degrees = pacman.direction.angle,
+            degrees = pacman.lastActiveDir.angle,
             pivot = Offset(
-                pacman.position.convertFloatToDisplayPos().first,
-                pacman.position.convertFloatToDisplayPos().second
+                pacman.screenPos.first,
+                pacman.screenPos.second
             )
         ) {
             drawArc(
@@ -250,8 +252,8 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.position.convertFloatToDisplayPos().first - radius,
-                    pacman.position.convertFloatToDisplayPos().second - radius
+                    pacman.screenPos.first - radius,
+                    pacman.screenPos.second - radius
                 ),
                 size = Size(radius * 2, radius * 2),
                 useCenter = true,

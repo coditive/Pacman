@@ -6,8 +6,8 @@ import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.util.ENERGIZER_POSITION
 import com.syrous.pacman.util.EnemyChaseSeconds
-import com.syrous.pacman.util.FoodRadius
 import com.syrous.pacman.util.Fraction_1_2
 import com.syrous.pacman.util.Fraction_1_4
 import com.syrous.pacman.util.GhostSize
@@ -15,16 +15,18 @@ import com.syrous.pacman.util.HORIZONTAL_WALL_LIST
 import com.syrous.pacman.util.NumberOfEnemies
 import com.syrous.pacman.util.PATHS
 import com.syrous.pacman.util.PATH_WITHOUT_FOOD
-import com.syrous.pacman.util.PacmanRadius
-import com.syrous.pacman.util.PacmanUnitRadius
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.VERTICAL_WALL_LIST
-import com.syrous.pacman.util.WallHeight
-import com.syrous.pacman.util.WallWidth
+import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.plus
+import com.syrous.pacman.util.times
+import com.syrous.pacman.util.toFloat
+import com.syrous.pacman.util.toGamePos
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlin.math.floor
 import kotlin.math.pow
+import kotlin.math.round
 import kotlin.math.sqrt
 
 class PacmanStateImpl : PacmanState {
@@ -34,9 +36,24 @@ class PacmanStateImpl : PacmanState {
     private var gameWidth = 0
     private var gameHeight = 0
     private var chaseSeconds = 0
+    private var scaleFactorX = 0
+    private var scaleFactorY = 0
+    private var requestedChangeDir: Directions = Directions.NONE
+    private var totalFood = 0
+    private var foodEaten = 0
 
     override val pacman =
-        MutableStateFlow(Pacman(Pair(0f, 0f), Pair(0f, 0f), Directions.RIGHT, Directions.RIGHT))
+        MutableStateFlow(
+            Pacman(
+                Pair(0f, 0f),
+                Pair(0, 0),
+                Pair(0, 0),
+                Pair(0f, 0f),
+                Directions.RIGHT,
+                Directions.RIGHT,
+                Directions.RIGHT,
+            )
+        )
     override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val vWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
@@ -48,7 +65,6 @@ class PacmanStateImpl : PacmanState {
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
-            Log.d("PacmanStateImpl", "Pacman updateScreen called!!")
             screenWidth = width
             screenHeight = height
             determinePlayingFieldSize()
@@ -74,15 +90,14 @@ class PacmanStateImpl : PacmanState {
                 }
             }
         }
-        Log.d("PacmanStateImpl", "Game Dimension -> x -> $gameWidth, y -> $gameHeight")
+
+        scaleFactorX = (screenWidth / (gameWidth * UnitScale)) * UnitScale
+        scaleFactorY = (screenHeight / (gameHeight * UnitScale)) * UnitScale
     }
 
     private fun buildPacmanWalls() {
-        Log.d("PacmanStateImpl", "BuildPacmanWalls Called!!!")
-        val scaleFactorX = (screenWidth / (gameWidth * UnitScale)) * UnitScale
-        val scaleFactorY = (screenHeight / (gameHeight * UnitScale)) * UnitScale
         val vWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
-        val hWallPointList = hashMapOf<Pair<Float,Float>, Pair<Float, Float>>()
+        val hWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
         for (wall in VERTICAL_WALL_LIST + HORIZONTAL_WALL_LIST) {
             if (wall.horizontalLength > 0) {
                 val x = wall.x + wall.horizontalLength - 1
@@ -98,10 +113,8 @@ class PacmanStateImpl : PacmanState {
                 )] = Pair(wall.x.toFloat() * scaleFactorX, y.toFloat() * scaleFactorY)
             }
         }
-        Log.d("PacmanStateImpl", "wallList will be updated")
         vWallList.value = vWallPointList
         hWallList.value = hWallPointList
-        Log.d("PacmanStateImpl", "wallList is updated!!!")
     }
 
     private fun initializePlayField() {
@@ -114,17 +127,13 @@ class PacmanStateImpl : PacmanState {
             }
             playField[x * UnitScale] = col
         }
-        Log.d(
-            "PacmanStateImpl",
-            "playField -> x -> ${playField.entries}, y -> ${playField[0]!!.entries} "
-        )
     }
 
-    private fun prepareTile(x: Int, y: Int, tunnel: Boolean, food: Food): Tile {
+    private fun prepareTile(x: Int, y: Int, tunnel: Boolean, isIntersection: Boolean = false, food: Food): Tile {
         return Tile(
             isPath = true,
             isTunnel = tunnel,
-            isIntersection = false,
+            isIntersection = isIntersection,
             food = if (playField[x]!![y]!!.food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
         )
     }
@@ -139,23 +148,23 @@ class PacmanStateImpl : PacmanState {
                 val y = p.y * UnitScale
 
                 for (x in (p.x + 1) * UnitScale until endX step UnitScale) {
-                    playField[x]!![y] = prepareTile(x, y, p.tunnel, playField[x]!![y]!!.food)
+                    playField[x]!![y] = prepareTile(x, y, p.tunnel, food = playField[x]!![y]!!.food)
                 }
 
                 playField[startX]!![y] =
-                    prepareTile(startX, y, p.tunnel, playField[startX]!![y]!!.food)
-                playField[endX]!![y] = prepareTile(endX, y, p.tunnel, playField[endX]!![y]!!.food)
+                    prepareTile(startX, y, p.tunnel, isIntersection = true, food = playField[startX]!![y]!!.food)
+                playField[endX]!![y] = prepareTile(endX, y, p.tunnel, isIntersection = true, playField[endX]!![y]!!.food)
             } else {
                 val endY = (p.y + p.verticalLength - 1) * UnitScale
                 val x = p.x * UnitScale
 
                 for (y in (p.y + 1) * UnitScale..endY step UnitScale) {
-                    playField[x]!![y] = prepareTile(x, y, p.tunnel, playField[x]!![y]!!.food)
+                    playField[x]!![y] = prepareTile(x, y, p.tunnel, food = playField[x]!![y]!!.food)
                 }
 
                 playField[x]!![startY] =
-                    prepareTile(x, startY, p.tunnel, playField[x]!![startY]!!.food)
-                playField[x]!![endY] = prepareTile(x, endY, p.tunnel, playField[x]!![endY]!!.food)
+                    prepareTile(x, startY, p.tunnel,isIntersection = true, playField[x]!![startY]!!.food)
+                playField[x]!![endY] = prepareTile(x, endY, p.tunnel, isIntersection = true, playField[x]!![endY]!!.food)
             }
         }
 
@@ -176,13 +185,12 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun createPlayFieldElements() {
-        createPellets()
+        createFood()
         initializePacman()
-        initializeWall()
         initializeGhosts()
     }
 
-    private fun createPellets() {
+    private fun createFood() {
         val food = foodList.value
         val scaleFactorX = (screenWidth / (gameWidth * UnitScale))
         val scaleFactorY = (screenHeight / (gameHeight * UnitScale))
@@ -193,10 +201,13 @@ class PacmanStateImpl : PacmanState {
                 if (playField[x]!![y]!!.food != Food.NONE) {
                     col[y * scaleFactorY] = Food.PELLET
                 }
+                if (Pair(x / UnitScale, y / UnitScale) in ENERGIZER_POSITION) {
+                    col[y * scaleFactorY] = Food.ENERGIZER
+                }
+                totalFood += 1
             }
             food[x * scaleFactorX] = col
         }
-        Log.d("PacmanStateImpl", "foodList -> $food")
         foodList.value = food
     }
 
@@ -204,22 +215,17 @@ class PacmanStateImpl : PacmanState {
         for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
             for (y in UnitScale..gameHeight * UnitScale step UnitScale) {
                 val allowedDir = mutableSetOf<Directions>()
-                when {
-                    playField[x]!![y - UnitScale]!!.isPath -> {
-                        allowedDir.add(Directions.UP)
-                    }
-
-                    playField[x]!![y + UnitScale]!!.isPath -> {
-                        allowedDir.add(Directions.DOWN)
-                    }
-
-                    playField[x - UnitScale]!![y]!!.isPath -> {
-                        allowedDir.add(Directions.LEFT)
-                    }
-
-                    playField[x + UnitScale]!![y]!!.isPath -> {
-                        allowedDir.add(Directions.RIGHT)
-                    }
+                if (playField[x]!![y - UnitScale]!!.isPath) {
+                    allowedDir.add(Directions.UP)
+                }
+                if (playField[x]!![y + UnitScale]!!.isPath) {
+                    allowedDir.add(Directions.DOWN)
+                }
+                if (playField[x - UnitScale]!![y]!!.isPath) {
+                    allowedDir.add(Directions.LEFT)
+                }
+                if (playField[x + UnitScale]!![y]!!.isPath) {
+                    allowedDir.add(Directions.RIGHT)
                 }
                 playField[x]!![y] = playField[x]!![y]!!.copy(allowedDir = allowedDir)
             }
@@ -227,56 +233,180 @@ class PacmanStateImpl : PacmanState {
     }
 
     override suspend fun updatePositionAfterLoop() {
+        if (requestedChangeDir != Directions.NONE) {
+            handleDirectionChange(requestedChangeDir)
+            requestedChangeDir = Directions.NONE
+        }
         updatePacmanPositionAfterLoop()
         updateEnemyPositionAfterLoop()
     }
 
-    private suspend fun updatePacmanPositionAfterLoop() {
-        val canHaveFood = canHaveFood(pacman.value)
-        val prevPacman = pacman.value
-        val prevDir = pacman.value.direction
-        val newMove = when {
-            checkPacmanAtBoundary() -> {
-                val (pacX, pacY) = prevPacman.position
-                when (prevDir) {
-                    Directions.LEFT -> prevPacman.copy(
-                        position = Pair(
-                            screenWidth - PacmanUnitRadius, pacY
-                        ),
-                    )
+    private fun updatePacmanPositionAfterLoop() {
+        if (scaleFactorX != 0 && scaleFactorY != 0) {
+            val pos = pacman.value.position
+            val dir = pacman.value.direction
+            val tilePos = pacman.value.tilePos
 
-                    Directions.RIGHT -> prevPacman.copy(position = Pair(PacmanUnitRadius, pacY))
+            val pacX = pos.first + dir.move.first
+            val pacY = pos.second + dir.move.second
+            val newPos = Pair(pacX, pacY)
 
-                    Directions.UP -> prevPacman.copy(
-                        position = Pair(
-                            pacX, screenHeight - PacmanUnitRadius
-                        ),
-                    )
+            pacman.value = pacman.value.copy(
+                position = newPos,
+                screenPos = Pair(
+                    newPos.first.div(UnitScale) * scaleFactorX,
+                    newPos.second.div(UnitScale) * scaleFactorY
+                )
+            )
 
-                    Directions.DOWN -> prevPacman.copy(position = Pair(pacX, PacmanUnitRadius))
+            val imaginaryX = pacX / UnitScale
+            val imaginaryY = pacY / UnitScale
+            val nextTile = Pair(
+                round(imaginaryX).toInt(),
+                round(imaginaryY).toInt()
+            )
+            val enteredTile = Pair(
+                floor(imaginaryX) * UnitScale,
+                floor(imaginaryY) * UnitScale
+            )
+
+            when {
+                nextTile.first != tilePos.first || nextTile.second != tilePos.second -> {
+                    pacmanEnteringTile(nextTile)
+                }
+
+                enteredTile == newPos -> {
+                    pacmanEnteredTile()
                 }
             }
+        }
+    }
 
-            canHaveFood != null -> {
-                score.value += 1
-                Pacman(
-                    position = prevPacman.position + prevDir.move,
-                    previousPosition = prevPacman.position,
-                    direction = prevDir,
-                    previousDirection = prevDir
-                )
+    private fun handleDirectionChange(inputDir: Directions) {
+        var dir = pacman.value.direction
+        val tilePos = pacman.value.tilePos
+        var lastActiveDir = pacman.value.lastActiveDir
+        if (dir == getOppositeDirection(inputDir)) {
+            dir = inputDir
+            if(dir != Directions.NONE) {
+                lastActiveDir = dir
             }
+            pacman.value = pacman.value.copy(direction = dir, nextDir = Directions.NONE, lastActiveDir = lastActiveDir)
+        } else if (dir != inputDir) {
+            val tile = getPlayFieldTile(tilePos)
+            val playFieldTile = playField[tile.first]!![tile.second]!!
+            if (dir == Directions.NONE) {
+                if (playFieldTile.allowedDir.contains(inputDir)) {
+                    dir = inputDir
+                    pacman.value = pacman.value.copy(direction = dir, lastActiveDir = dir)
+                }
+            } else {
+                if (playFieldTile.allowedDir.contains(inputDir)) {
+                    var pastPos = pacman.value.position
+                    val pastTilePos = pacman.value.tilePos
+                    pastPos -= inputDir.move
+                    var stepPassed = 0
+                    if (pastPos.toGamePos() == pastTilePos) {
+                        stepPassed = 1
+                    } else {
+                        pastPos -= inputDir.move
+                        if (pastPos.toGamePos() == pastTilePos) {
+                            stepPassed = 2
+                        }
+                    }
 
-            else -> {
-                Pacman(
-                    position = prevPacman.position + prevDir.move,
-                    previousPosition = prevPacman.position,
-                    direction = prevDir,
-                    previousDirection = prevDir
-                )
+                    if (stepPassed != 0) {
+                        // the input of direction is slightly delayed,
+                        // correct the location according to the new direction.
+                        dir = inputDir
+                        val pastTile = pacman.value.tilePos
+                        val newPos = pastTile.toFloat() + dir.move * stepPassed
+                        pacman.value = pacman.value.copy(
+                            position = Pair(
+                                newPos.first * UnitScale,
+                                newPos.second * UnitScale
+                            ),
+                            direction = dir,
+                            lastActiveDir = dir
+                        )
+                        return
+                    }
+                }
+                pacman.value = pacman.value.copy(nextDir = inputDir)
             }
         }
-        pacman.value = newMove
+    }
+
+
+    private fun pacmanEnteringTile(tile: Pair<Int, Int>) {
+        adjustOverShootOnEnteringTile(getPlayFieldTile(tile))
+        if (canHaveFood(getPlayFieldTile(tile))) {
+            haveFood(getPlayFieldTile(tile))
+        }
+        pacman.value = pacman.value.copy(tilePos = tile, lastGoodTilePos = tile)
+    }
+
+    private fun getPlayFieldTile(tile: Pair<Int, Int>): Pair<Int, Int> =
+        Pair(tile.first * UnitScale, tile.second * UnitScale)
+
+    private fun canHaveFood(playFieldTile: Pair<Int, Int>): Boolean =
+        playField[playFieldTile.first]!![playFieldTile.second]!!.food != Food.NONE
+
+    private fun haveFood(playFieldTile: Pair<Int, Int>) {
+        val adjustedScaleFactorX = scaleFactorX / UnitScale
+        val adjustedScaleFactorY = scaleFactorY / UnitScale
+        val listOfAvailableFood = foodList.value.toMutableMap()
+        playField[playFieldTile.first]!![playFieldTile.second] =
+            playField[playFieldTile.first]!![playFieldTile.second]!!.copy(food = Food.NONE)
+        listOfAvailableFood[playFieldTile.first * adjustedScaleFactorX]!!.remove(playFieldTile.second * adjustedScaleFactorY)
+        updateScore(playField[playFieldTile.first]!![playFieldTile.second]!!.food)
+        foodList.value = listOfAvailableFood
+    }
+
+    private fun updateScore(food: Food) {
+        foodEaten += 1
+        score.value = foodEaten
+    }
+
+    private fun adjustOverShootOnEnteringTile(playFieldTile: Pair<Int, Int>) {
+        if (playField[playFieldTile.first]!![playFieldTile.second]!!.isPath.not()) {
+            val lastGoodTile = pacman.value.lastGoodTilePos
+            pacman.value = pacman.value.copy(
+                position = Pair(
+                    lastGoodTile.first * UnitScale.toFloat(),
+                    lastGoodTile.second * UnitScale.toFloat()
+                ),
+                tilePos = lastGoodTile,
+                direction = Directions.NONE
+            )
+        }
+    }
+
+    private fun pacmanEnteredTile() {
+        val dir = pacman.value.direction
+        val nextDir = pacman.value.nextDir
+        val tilePos = pacman.value.tilePos
+        var lastActiveDir = pacman.value.lastActiveDir
+        Log.d("PacmanStateImpl", "pacmanEnteredTile -> ${pacman.value}")
+        val tile = getPlayFieldTile(tilePos)
+        val playFieldTile = playField[tile.first]!![tile.second]!!
+        Log.d("PacmanStateImpl", "pacmanEnteredTile -> tile -> $playFieldTile dir -> $dir, nextDir -> $nextDir, lastActiveDir -> $lastActiveDir")
+        if (playFieldTile.isIntersection) {
+            Log.d("PacmanStateImpl", "pacmanEnteredTile -> tile is intersecting-> dir -> $dir, nextDir -> $nextDir, lastActiveDir -> $lastActiveDir")
+
+            if (nextDir != Directions.NONE && playFieldTile.allowedDir.contains(nextDir)) {
+                if(dir != Directions.NONE){
+                    lastActiveDir = dir
+                }
+                pacman.value = pacman.value.copy(direction = nextDir, nextDir = Directions.NONE, lastActiveDir = lastActiveDir)
+            } else if (playFieldTile.allowedDir.contains(dir).not()) {
+                if(dir != Directions.NONE) {
+                    lastActiveDir = dir
+                }
+                pacman.value =
+                    pacman.value.copy(direction = Directions.NONE, nextDir = Directions.NONE, lastActiveDir = lastActiveDir)
+            }
+        }
     }
 
     private suspend fun updateEnemyPositionAfterLoop() {
@@ -340,15 +470,13 @@ class PacmanStateImpl : PacmanState {
             Directions.RIGHT -> Directions.LEFT
             Directions.UP -> Directions.DOWN
             Directions.DOWN -> Directions.UP
+            Directions.NONE -> Directions.NONE
         }
     }
 
     private fun getEuclideanDistanceBetween(
         start: Pair<Float, Float>, target: Pair<Float, Float>
     ): Float = sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
-
-    private fun checkPacmanAtBoundary(): Boolean =
-        pacman.value.position.first.toInt() !in PacmanUnitRadius.toInt()..screenWidth - PacmanUnitRadius.toInt() || pacman.value.position.second.toInt() !in PacmanUnitRadius.toInt()..screenHeight - PacmanUnitRadius.toInt()
 
     private fun checkPacmanNearBy(ghost: Ghost): Boolean {
         val xRange = ghost.position.first - 15f..ghost.position.first + 15f
@@ -395,6 +523,8 @@ class PacmanStateImpl : PacmanState {
                         else -> Directions.DOWN
                     }
                 }
+
+                Directions.NONE -> TODO()
             }
             val newMove = ghost.position + moveDirection.move
             enemyList.remove(ghost)
@@ -427,111 +557,37 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    private fun canHaveFood(pacman: Pacman): Pair<Int, Int>? {
-        return null
-    }
-
     override fun moveUp() {
-        val canHaveFoodResult = canHaveFood(pacman.value)
-        val prevPos = pacman.value.position
-        val prevDir = pacman.value.direction
-        val newMove = Pacman(
-            position = pacman.value.position + Directions.UP.move,
-            previousPosition = prevPos,
-            direction = Directions.UP,
-            previousDirection = prevDir
-        )
-        when {
-            canHaveFoodResult != null -> {
-                score.value += 1
-                pacman.value = newMove
-            }
-
-            else -> pacman.value = newMove
-        }
+        requestedChangeDir = Directions.UP
     }
 
     override fun moveDown() {
-        val canHaveFoodResult = canHaveFood(pacman.value)
-        val prevPos = pacman.value.position
-        val prevDir = pacman.value.direction
-        val newMove = Pacman(
-            position = pacman.value.position + Directions.DOWN.move,
-            previousPosition = prevPos,
-            direction = Directions.DOWN,
-            previousDirection = prevDir
-        )
-        when {
-            canHaveFoodResult != null -> {
-                score.value += 1
-                pacman.value = newMove
-            }
-
-            else -> pacman.value = newMove
-        }
+        requestedChangeDir = Directions.DOWN
     }
 
     override fun moveLeft() {
-        val canHaveFoodResult = canHaveFood(pacman.value)
-        val prevPos = pacman.value.position
-        val prevDir = pacman.value.direction
-        val newMove = Pacman(
-            position = pacman.value.position + Directions.LEFT.move,
-            previousPosition = prevPos,
-            direction = Directions.LEFT,
-            previousDirection = prevDir
-        )
-        when {
-            canHaveFoodResult != null -> {
-                score.value += 1
-                pacman.value = newMove
-            }
-
-            else -> pacman.value = newMove
-        }
+        requestedChangeDir = Directions.LEFT
     }
 
     override fun moveRight() {
-        val canHaveFoodResult = canHaveFood(pacman.value)
-        val prevPos = pacman.value.position
-        val prevDir = pacman.value.direction
-        val newMove = Pacman(
-            position = pacman.value.position + Directions.RIGHT.move,
-            previousPosition = prevPos,
-            direction = Directions.RIGHT,
-            previousDirection = prevDir
-        )
-        when {
-            canHaveFoodResult != null -> {
-                score.value += 1
-                pacman.value = newMove
-            }
-
-            else -> pacman.value = newMove
-        }
+        requestedChangeDir = Directions.RIGHT
     }
 
     private fun initializePacman() {
         pacman.value = Pacman(
-            position = screenWidth * Fraction_1_2 + PacmanRadius to screenHeight * Fraction_1_2 + PacmanRadius,
-            previousPosition = screenWidth * Fraction_1_2 + PacmanRadius to screenHeight * Fraction_1_2 + PacmanRadius,
+            position = Pair(14f * UnitScale, 24f * UnitScale),
+            tilePos = Pair(14, 24),
+            screenPos = Pair(14f * scaleFactorX, 24f * scaleFactorY),
+//            currentSpeed = CurrentSpeed.NORMAL,
+            lastGoodTilePos = Pair(14, 24),
+            lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
-            previousDirection = Directions.RIGHT
+//            fullSpeed = 0.8f,
+//            dotEatingSpeed = 0.71f,
+//            tunnelSpeed = 0.8f,,
+            nextDir = Directions.RIGHT
         )
-    }
-
-    private fun initializeWall() {
-
-    }
-
-
-    private fun checkWall(
-        point: Pair<Int, Int>, wallList: List<Pair<Float, Float>>
-    ): Boolean {
-        for (wall in wallList) {
-            if (point.first in wall.first.toInt() - FoodRadius.toInt()..WallHeight + FoodRadius.toInt() && point.second in wall.second.toInt() - FoodRadius.toInt()..WallWidth + FoodRadius.toInt()) return true
-        }
-        return false
+        Log.d("PacmanStateImpl", "pacman -> ${pacman.value}")
     }
 }
 

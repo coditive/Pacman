@@ -1,18 +1,17 @@
 package com.syrous.pacman.util
 
-import kotlin.math.round
-
 
 operator fun Pair<Float, Float>.plus(other: Pair<Float, Float>): Pair<Float, Float> {
     return Pair(this.first + other.first, this.second + other.second)
 }
 
-fun Pair<Float, Float>.convertFloatToDisplayPos(): Pair<Float, Float> {
-    val (pacX, pacY) = this
-    val imaginaryX = pacX / UnitScale
-    val imaginaryY = pacY / UnitScale
-    val newTileX = round(imaginaryX) * UnitScale
-    val newTileY = round(imaginaryY) * UnitScale
-    return Pair(newTileX, newTileY)
+operator fun Pair<Float, Float>.minus(other: Pair<Float, Float>): Pair<Float, Float> {
+    return Pair(this.first - other.first, this.second - other.second)
 }
 
+operator fun Pair<Float, Float>.times(num: Int): Pair<Float, Float> =
+    Pair(this.first * num, this.second * num)
+
+fun Pair<Int, Int>.toFloat(): Pair<Float, Float> = Pair(this.first.toFloat(), this.second.toFloat())
+
+fun Pair<Float, Float>.toGamePos(): Pair<Int, Int> = Pair(this.first.toInt() / UnitScale, this.second.toInt() / UnitScale)
