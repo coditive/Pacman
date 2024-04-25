@@ -10,6 +10,7 @@ data class Pacman (
 //    val tunnelSpeed: Float,
 //    val dotEatingSpeed: Float,
 //    val fullSpeed: Float,
+    val lastActiveDir: Directions,
     val direction: Directions,
     val nextDir: Directions,
 )

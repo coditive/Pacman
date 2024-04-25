@@ -239,9 +239,9 @@ class GamePlay(
         animatedCutAngle: Float,
         pacman: Pacman
     ) {
-        Log.d("GamePlayScreen","pacman position -> ${pacman.position}")
+        Log.d("GamePlayScreen","pacman position -> $pacman")
         rotate(
-            degrees = pacman.direction.angle,
+            degrees = pacman.lastActiveDir.angle,
             pivot = Offset(
                 pacman.screenPos.first,
                 pacman.screenPos.second

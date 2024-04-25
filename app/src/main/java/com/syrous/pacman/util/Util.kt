@@ -13,3 +13,5 @@ operator fun Pair<Float, Float>.times(num: Int): Pair<Float, Float> =
     Pair(this.first * num, this.second * num)
 
 fun Pair<Int, Int>.toFloat(): Pair<Float, Float> = Pair(this.first.toFloat(), this.second.toFloat())
+
+fun Pair<Float, Float>.toGamePos(): Pair<Int, Int> = Pair(this.first.toInt() / UnitScale, this.second.toInt() / UnitScale)

@@ -21,6 +21,7 @@ import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.plus
 import com.syrous.pacman.util.times
 import com.syrous.pacman.util.toFloat
+import com.syrous.pacman.util.toGamePos
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.math.floor
@@ -48,6 +49,7 @@ class PacmanStateImpl : PacmanState {
                 Pair(0, 0),
                 Pair(0, 0),
                 Pair(0f, 0f),
+                Directions.RIGHT,
                 Directions.RIGHT,
                 Directions.RIGHT,
             )
@@ -91,11 +93,9 @@ class PacmanStateImpl : PacmanState {
 
         scaleFactorX = (screenWidth / (gameWidth * UnitScale)) * UnitScale
         scaleFactorY = (screenHeight / (gameHeight * UnitScale)) * UnitScale
-        Log.d("PacmanStateImpl", "Game Dimension -> x -> $gameWidth, y -> $gameHeight")
     }
 
     private fun buildPacmanWalls() {
-        Log.d("PacmanStateImpl", "BuildPacmanWalls Called!!!")
         val vWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
         val hWallPointList = hashMapOf<Pair<Float, Float>, Pair<Float, Float>>()
         for (wall in VERTICAL_WALL_LIST + HORIZONTAL_WALL_LIST) {
@@ -113,10 +113,8 @@ class PacmanStateImpl : PacmanState {
                 )] = Pair(wall.x.toFloat() * scaleFactorX, y.toFloat() * scaleFactorY)
             }
         }
-        Log.d("PacmanStateImpl", "wallList will be updated")
         vWallList.value = vWallPointList
         hWallList.value = hWallPointList
-        Log.d("PacmanStateImpl", "wallList is updated!!!")
     }
 
     private fun initializePlayField() {
@@ -131,11 +129,11 @@ class PacmanStateImpl : PacmanState {
         }
     }
 
-    private fun prepareTile(x: Int, y: Int, tunnel: Boolean, food: Food): Tile {
+    private fun prepareTile(x: Int, y: Int, tunnel: Boolean, isIntersection: Boolean = false, food: Food): Tile {
         return Tile(
             isPath = true,
             isTunnel = tunnel,
-            isIntersection = false,
+            isIntersection = isIntersection,
             food = if (playField[x]!![y]!!.food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
         )
     }
@@ -150,23 +148,23 @@ class PacmanStateImpl : PacmanState {
                 val y = p.y * UnitScale
 
                 for (x in (p.x + 1) * UnitScale until endX step UnitScale) {
-                    playField[x]!![y] = prepareTile(x, y, p.tunnel, playField[x]!![y]!!.food)
+                    playField[x]!![y] = prepareTile(x, y, p.tunnel, food = playField[x]!![y]!!.food)
                 }
 
                 playField[startX]!![y] =
-                    prepareTile(startX, y, p.tunnel, playField[startX]!![y]!!.food)
-                playField[endX]!![y] = prepareTile(endX, y, p.tunnel, playField[endX]!![y]!!.food)
+                    prepareTile(startX, y, p.tunnel, isIntersection = true, food = playField[startX]!![y]!!.food)
+                playField[endX]!![y] = prepareTile(endX, y, p.tunnel, isIntersection = true, playField[endX]!![y]!!.food)
             } else {
                 val endY = (p.y + p.verticalLength - 1) * UnitScale
                 val x = p.x * UnitScale
 
                 for (y in (p.y + 1) * UnitScale..endY step UnitScale) {
-                    playField[x]!![y] = prepareTile(x, y, p.tunnel, playField[x]!![y]!!.food)
+                    playField[x]!![y] = prepareTile(x, y, p.tunnel, food = playField[x]!![y]!!.food)
                 }
 
                 playField[x]!![startY] =
-                    prepareTile(x, startY, p.tunnel, playField[x]!![startY]!!.food)
-                playField[x]!![endY] = prepareTile(x, endY, p.tunnel, playField[x]!![endY]!!.food)
+                    prepareTile(x, startY, p.tunnel,isIntersection = true, playField[x]!![startY]!!.food)
+                playField[x]!![endY] = prepareTile(x, endY, p.tunnel, isIntersection = true, playField[x]!![endY]!!.food)
             }
         }
 
@@ -210,7 +208,6 @@ class PacmanStateImpl : PacmanState {
             }
             food[x * scaleFactorX] = col
         }
-        Log.d("PacmanStateImpl", "foodList -> $food")
         foodList.value = food
     }
 
@@ -272,10 +269,6 @@ class PacmanStateImpl : PacmanState {
                 floor(imaginaryX) * UnitScale,
                 floor(imaginaryY) * UnitScale
             )
-            Log.d(
-                "PacmanStateImpl",
-                "step fun -> After  -> pos -> $pos, newPos -> $newPos, imaginary => $imaginaryX, $imaginaryY, newTile -> $nextTile, tilePos => $tilePos, enteredTile => $enteredTile"
-            )
 
             when {
                 nextTile.first != tilePos.first || nextTile.second != tilePos.second -> {
@@ -292,44 +285,32 @@ class PacmanStateImpl : PacmanState {
     private fun handleDirectionChange(inputDir: Directions) {
         var dir = pacman.value.direction
         val tilePos = pacman.value.tilePos
-        Log.d(
-            "PacmanStateImpl",
-            "handleDirectionChange -> inputDir -> $inputDir, pacman dir -> $dir "
-        )
+        var lastActiveDir = pacman.value.lastActiveDir
         if (dir == getOppositeDirection(inputDir)) {
             dir = inputDir
-            Log.d(
-                "PacmanStateImpl",
-                "handleDirectionChange in opposite dir -> inputDir -> $inputDir "
-            )
-            pacman.value = pacman.value.copy(direction = dir, nextDir = Directions.NONE)
+            if(dir != Directions.NONE) {
+                lastActiveDir = dir
+            }
+            pacman.value = pacman.value.copy(direction = dir, nextDir = Directions.NONE, lastActiveDir = lastActiveDir)
         } else if (dir != inputDir) {
             val tile = getPlayFieldTile(tilePos)
             val playFieldTile = playField[tile.first]!![tile.second]!!
             if (dir == Directions.NONE) {
-                Log.d(
-                    "PacmanStateImpl",
-                    "handleDirectionChange in opposite dir -> inputDir -> $inputDir, pacman dir -> $dir, isIntersection -> ${playFieldTile.isIntersection}, allowedDir -> ${playFieldTile.allowedDir}"
-                )
                 if (playFieldTile.allowedDir.contains(inputDir)) {
                     dir = inputDir
-                    Log.d(
-                        "PacmanStateImpl",
-                        "handleDirectionChange in contains dir -> inputDir -> $inputDir, pacman dir -> $dir "
-                    )
-                    pacman.value = pacman.value.copy(direction = dir)
+                    pacman.value = pacman.value.copy(direction = dir, lastActiveDir = dir)
                 }
             } else {
                 if (playFieldTile.allowedDir.contains(inputDir)) {
                     var pastPos = pacman.value.position
                     val pastTilePos = pacman.value.tilePos
-                    pastPos -= pastPos + inputDir.move
+                    pastPos -= inputDir.move
                     var stepPassed = 0
-                    if (pastPos.first.toInt() == pastTilePos.first && pastPos.second.toInt() == pastTilePos.second) {
+                    if (pastPos.toGamePos() == pastTilePos) {
                         stepPassed = 1
                     } else {
-                        pastPos -= pastPos + inputDir.move
-                        if (pastPos.first.toInt() == pastTilePos.first && pastPos.second.toInt() == pastTilePos.second) {
+                        pastPos -= inputDir.move
+                        if (pastPos.toGamePos() == pastTilePos) {
                             stepPassed = 2
                         }
                     }
@@ -340,13 +321,15 @@ class PacmanStateImpl : PacmanState {
                         dir = inputDir
                         val pastTile = pacman.value.tilePos
                         val newPos = pastTile.toFloat() + dir.move * stepPassed
-                        Log.d("PacmanStateImpl", "inputDir -> $inputDir ")
                         pacman.value = pacman.value.copy(
                             position = Pair(
                                 newPos.first * UnitScale,
                                 newPos.second * UnitScale
-                            )
+                            ),
+                            direction = dir,
+                            lastActiveDir = dir
                         )
+                        return
                     }
                 }
                 pacman.value = pacman.value.copy(nextDir = inputDir)
@@ -360,7 +343,6 @@ class PacmanStateImpl : PacmanState {
         if (canHaveFood(getPlayFieldTile(tile))) {
             haveFood(getPlayFieldTile(tile))
         }
-        Log.d("PacmanStateImpl", "pacmanEnteringTile pacman -> ${pacman.value} ")
         pacman.value = pacman.value.copy(tilePos = tile, lastGoodTilePos = tile)
     }
 
@@ -376,15 +358,7 @@ class PacmanStateImpl : PacmanState {
         val listOfAvailableFood = foodList.value.toMutableMap()
         playField[playFieldTile.first]!![playFieldTile.second] =
             playField[playFieldTile.first]!![playFieldTile.second]!!.copy(food = Food.NONE)
-        Log.d(
-            "PacmanStateImpl",
-            "tile -> ${playFieldTile.first * adjustedScaleFactorX}, ${playFieldTile.second * adjustedScaleFactorY}  listOfAvailableFood -> ${listOfAvailableFood[playFieldTile.first * adjustedScaleFactorX]!![playFieldTile.second * adjustedScaleFactorY]}"
-        )
         listOfAvailableFood[playFieldTile.first * adjustedScaleFactorX]!!.remove(playFieldTile.second * adjustedScaleFactorY)
-        Log.d(
-            "PacmanStateImpl",
-            "after remove tile -> ${playFieldTile.first * adjustedScaleFactorX}, ${playFieldTile.second * adjustedScaleFactorY}  listOfAvailableFood -> ${listOfAvailableFood[playFieldTile.first * adjustedScaleFactorX]!![playFieldTile.second * adjustedScaleFactorY]}"
-        )
         updateScore(playField[playFieldTile.first]!![playFieldTile.second]!!.food)
         foodList.value = listOfAvailableFood
     }
@@ -409,16 +383,28 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun pacmanEnteredTile() {
+        val dir = pacman.value.direction
         val nextDir = pacman.value.nextDir
         val tilePos = pacman.value.tilePos
+        var lastActiveDir = pacman.value.lastActiveDir
+        Log.d("PacmanStateImpl", "pacmanEnteredTile -> ${pacman.value}")
         val tile = getPlayFieldTile(tilePos)
-        val playFieldTile = playField[tile.first]!![tile.second]
-        if (playFieldTile != null && playFieldTile.isIntersection) {
-            if (playFieldTile.allowedDir.contains(nextDir)) {
-                pacman.value = pacman.value.copy(direction = nextDir, nextDir = Directions.NONE)
-            } else if (playFieldTile.allowedDir.contains(nextDir).not()) {
+        val playFieldTile = playField[tile.first]!![tile.second]!!
+        Log.d("PacmanStateImpl", "pacmanEnteredTile -> tile -> $playFieldTile dir -> $dir, nextDir -> $nextDir, lastActiveDir -> $lastActiveDir")
+        if (playFieldTile.isIntersection) {
+            Log.d("PacmanStateImpl", "pacmanEnteredTile -> tile is intersecting-> dir -> $dir, nextDir -> $nextDir, lastActiveDir -> $lastActiveDir")
+
+            if (nextDir != Directions.NONE && playFieldTile.allowedDir.contains(nextDir)) {
+                if(dir != Directions.NONE){
+                    lastActiveDir = dir
+                }
+                pacman.value = pacman.value.copy(direction = nextDir, nextDir = Directions.NONE, lastActiveDir = lastActiveDir)
+            } else if (playFieldTile.allowedDir.contains(dir).not()) {
+                if(dir != Directions.NONE) {
+                    lastActiveDir = dir
+                }
                 pacman.value =
-                    pacman.value.copy(direction = Directions.NONE, nextDir = Directions.NONE)
+                    pacman.value.copy(direction = Directions.NONE, nextDir = Directions.NONE, lastActiveDir = lastActiveDir)
             }
         }
     }
@@ -594,6 +580,7 @@ class PacmanStateImpl : PacmanState {
             screenPos = Pair(14f * scaleFactorX, 24f * scaleFactorY),
 //            currentSpeed = CurrentSpeed.NORMAL,
             lastGoodTilePos = Pair(14, 24),
+            lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
 //            fullSpeed = 0.8f,
 //            dotEatingSpeed = 0.71f,
