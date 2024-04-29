@@ -13,7 +13,6 @@ import com.syrous.pacman.util.times
 import com.syrous.pacman.util.toFloat
 import com.syrous.pacman.util.toGamePos
 import kotlinx.coroutines.flow.MutableStateFlow
-import timber.log.Timber
 
 class PacmanControllerImpl(
     private val gameEventCallback: (GameInternalEvent) -> Unit
@@ -97,18 +96,19 @@ class PacmanControllerImpl(
     ) {
         if (playField[playFieldTile.first]!![playFieldTile.second]!!.isPath.not()) {
             val lastGoodTile = pacman.value.lastGoodTilePos
-            Timber.d("adjustOverShoot playField ->  ${playField[playFieldTile.first]!![playFieldTile.second]!!}, updateActor -> ${ActorUpdateInfo(
-                position = Pair(
-                    lastGoodTile.first * UnitScale.toFloat(),
-                    lastGoodTile.second * UnitScale.toFloat()
-                ),
-                tilePos = lastGoodTile,
-                lastGoodTilePos = pacman.value.lastGoodTilePos,
-                direction = Directions.NONE,
-                lastActiveDir = pacman.value.lastActiveDir,
-                nextDir = pacman.value.nextDir,
-            )}")
-
+            updateActor(
+                ActorUpdateInfo(
+                    position = Pair(
+                        lastGoodTile.first * UnitScale.toFloat(),
+                        lastGoodTile.second * UnitScale.toFloat()
+                    ),
+                    tilePos = lastGoodTile,
+                    lastGoodTilePos = pacman.value.lastGoodTilePos,
+                    direction = Directions.NONE,
+                    lastActiveDir = pacman.value.lastActiveDir,
+                    nextDir = pacman.value.nextDir,
+                )
+            )
         }
     }
 
@@ -177,7 +177,6 @@ class PacmanControllerImpl(
                             direction = dir,
                             lastActiveDir = dir
                         )
-                        Timber.d("input dir stepPassed != 0 ${pacman.value}")
                         return
                     }
                 }

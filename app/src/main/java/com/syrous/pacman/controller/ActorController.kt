@@ -48,18 +48,6 @@ abstract class ActorController(
         val pacY = pos.second + dir.move.second
         val newPos = Pair(pacX, pacY)
 
-        Timber.d(
-            "actorUpdateInfo -> ${
-                ActorUpdateInfo(
-                    position = newPos,
-                    tilePos = actor.tilePos,
-                    lastGoodTilePos = actor.lastGoodTilePos,
-                    lastActiveDir = actor.lastActiveDir,
-                    direction = actor.direction,
-                    nextDir = actor.nextDir,
-                )
-            }"
-        )
         updateActor(
             ActorUpdateInfo(
                 position = newPos,
@@ -117,7 +105,6 @@ abstract class ActorController(
         if (canHaveFood(getPlayFieldTile(tilePos))) {
             haveFood(getPlayFieldTile(tilePos))
         }
-        Timber.d("entering Tile actorUpdateInfo -> $actorUpdateInfo")
 
         updateActor(actorUpdateInfo)
     }
