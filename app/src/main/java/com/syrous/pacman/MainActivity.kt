@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.lifecycleScope
 import com.syrous.pacman.controller.GameController
+import com.syrous.pacman.model.GameEvent
 import com.syrous.pacman.navigation.GameScreen
 import com.syrous.pacman.screen.GameOver
 import com.syrous.pacman.screen.GamePlay

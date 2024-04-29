@@ -1,6 +1,7 @@
 package com.syrous.pacman
 
 import com.syrous.pacman.model.Food
+import com.syrous.pacman.model.GameEvent
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile

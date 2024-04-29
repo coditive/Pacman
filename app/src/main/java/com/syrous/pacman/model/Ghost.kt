@@ -1,11 +1,11 @@
 package com.syrous.pacman.model
 
-import com.syrous.pacman.EnemyModes
-
 data class Ghost (
-    val id: Int,
-    val position: Pair<Float, Float>,
-    val direction: Directions,
-    val imageId: Int,
-    val enemyMode: EnemyModes
-)
+    override val position: Pair<Float, Float>,
+    override val tilePos: Pair<Int, Int>,
+    override val lastGoodTilePos: Pair<Int, Int>,
+    override val screenPos: Pair<Float, Float>,
+    override val lastActiveDir: Directions,
+    override val direction: Directions,
+    override val nextDir: Directions,
+): Actor(position, tilePos, lastGoodTilePos, screenPos, lastActiveDir, direction, nextDir)

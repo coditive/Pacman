@@ -36,8 +36,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.PacmanState
 import com.syrous.pacman.R
@@ -50,7 +48,6 @@ import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
 import com.syrous.pacman.util.EnergizerRadius
 import com.syrous.pacman.util.FoodRadius
-import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
 
 sealed class GamePlayScreenAction {
@@ -221,16 +218,16 @@ class GamePlay(
     }
 
     private fun DrawScope.drawGhost(ghost: Ghost, ghostImageList: List<ImageBitmap>) {
-        drawImage(
-            image = ghostImageList[ghost.id],
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
-            dstOffset = IntOffset(
-                ghost.position.first.toInt(),
-                ghost.position.second.toInt()
-            ),
-            dstSize = IntSize(GhostSize, GhostSize),
-        )
+//        drawImage(
+//            image = ghostImageList[ghost.id],
+//            srcOffset = IntOffset.Zero,
+//            srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
+//            dstOffset = IntOffset(
+//                ghost.position.first.toInt(),
+//                ghost.position.second.toInt()
+//            ),
+//            dstSize = IntSize(GhostSize, GhostSize),
+//        )
     }
 
     private fun DrawScope.drawCircleWithCutout(
@@ -239,7 +236,6 @@ class GamePlay(
         animatedCutAngle: Float,
         pacman: Pacman
     ) {
-        Log.d("GamePlayScreen","pacman position -> $pacman")
         rotate(
             degrees = pacman.lastActiveDir.angle,
             pivot = Offset(
