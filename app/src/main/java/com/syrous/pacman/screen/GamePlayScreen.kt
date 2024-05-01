@@ -35,6 +35,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.GameState
 import com.syrous.pacman.R
@@ -47,6 +49,7 @@ import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
 import com.syrous.pacman.util.EnergizerRadius
 import com.syrous.pacman.util.FoodRadius
+import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
 
 sealed class GamePlayScreenAction {
@@ -147,7 +150,10 @@ class GamePlay(
     @Composable
     private fun PacmanActorComposable(modifier: Modifier = Modifier) {
         val pacman = gameState.pacman.collectAsState().value
-        val ghosts = gameState.ghosts.collectAsState().value
+        val blinky = gameState.blinky.collectAsState().value
+        val pinky = gameState.pinky.collectAsState().value
+        val inky = gameState.inky.collectAsState().value
+        val clyde = gameState.clyde.collectAsState().value
 
         val animatableCutAngle = remember {
             Animatable(CutAngle)
@@ -178,9 +184,10 @@ class GamePlay(
                 pacman = pacman
             )
 
-            for (ghost in ghosts) {
-                drawGhost(ghost, ghostImageList)
-            }
+            drawGhost(blinky, ghostImageList[0])
+            drawGhost(pinky, ghostImageList[1])
+            drawGhost(inky, ghostImageList[2])
+            drawGhost(clyde, ghostImageList[3])
         }
     }
 
@@ -213,17 +220,17 @@ class GamePlay(
         }
     }
 
-    private fun DrawScope.drawGhost(ghost: Ghost, ghostImageList: List<ImageBitmap>) {
-//        drawImage(
-//            image = ghostImageList[ghost.id],
-//            srcOffset = IntOffset.Zero,
-//            srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
-//            dstOffset = IntOffset(
-//                ghost.position.first.toInt(),
-//                ghost.position.second.toInt()
-//            ),
-//            dstSize = IntSize(GhostSize, GhostSize),
-//        )
+    private fun DrawScope.drawGhost(ghost: Ghost, ghostImage: ImageBitmap) {
+        drawImage(
+            image = ghostImage,
+            srcOffset = IntOffset.Zero,
+            srcSize = IntSize(ghostImage.width, ghostImage.height),
+            dstOffset = IntOffset(
+                ghost.position.first.toInt(),
+                ghost.position.second.toInt()
+            ),
+            dstSize = IntSize(GhostSize, GhostSize),
+        )
     }
 
     private fun DrawScope.drawCircleWithCutout(
