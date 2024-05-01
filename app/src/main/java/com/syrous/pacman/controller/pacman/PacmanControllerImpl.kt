@@ -1,11 +1,14 @@
-package com.syrous.pacman.controller
+package com.syrous.pacman.controller.pacman
 
+import com.syrous.pacman.controller.ActorController
+import com.syrous.pacman.model.Actor
 import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GameInternalEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.model.toPacman
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.plus
@@ -59,18 +62,7 @@ class PacmanControllerImpl(
             requestedChangeDir = Directions.NONE
         }
         step(pacman.value) { actorUpdateInfo ->
-            pacman.value = pacman.value.copy(
-                position = actorUpdateInfo.position,
-                tilePos = actorUpdateInfo.tilePos,
-                screenPos = Pair(
-                    actorUpdateInfo.position.first * scaleFactorX,
-                    actorUpdateInfo.position.second * scaleFactorY
-                ),
-                lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                lastActiveDir = actorUpdateInfo.lastActiveDir,
-                direction = actorUpdateInfo.direction,
-                nextDir = actorUpdateInfo.nextDir
-            )
+            pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
         }
     }
 
@@ -91,10 +83,10 @@ class PacmanControllerImpl(
     }
 
     override fun adjustOverShootOnEnteringTile(
-        playFieldTile: Pair<Int, Int>,
+        playFieldTile: Tile,
         updateActor: (ActorUpdateInfo) -> Unit
     ) {
-        if (playField[playFieldTile.first]!![playFieldTile.second]!!.isPath.not()) {
+        if (playFieldTile.isPath.not()) {
             val lastGoodTile = pacman.value.lastGoodTilePos
             updateActor(
                 ActorUpdateInfo(
@@ -112,13 +104,13 @@ class PacmanControllerImpl(
         }
     }
 
-    override fun reverseOnEnteringTile() {
+    override fun reverseOnEnteringTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
     }
 
-    override fun handleObjectOnEncounter() {
+    override fun handleObjectOnEncounter(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
     }
 
-    override fun decideNextDirAfterEnteredTile() {
+    override fun decideNextDirAfterEnteredTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
     }
 
     override fun haveFood(tilePos: Pair<Int, Int>) {
@@ -140,8 +132,7 @@ class PacmanControllerImpl(
                 lastActiveDir = lastActiveDir
             )
         } else if (dir != inputDir) {
-            val tile = getPlayFieldTile(tilePos)
-            val playFieldTile = playField[tile.first]!![tile.second]!!
+            val playFieldTile = getPlayFieldTile(tilePos)
             if (dir == Directions.NONE) {
                 if (playFieldTile.allowedDir.contains(inputDir)) {
                     dir = inputDir

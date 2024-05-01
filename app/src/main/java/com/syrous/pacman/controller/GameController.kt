@@ -1,10 +1,10 @@
 package com.syrous.pacman.controller
 
-import com.syrous.pacman.PacmanState
+import com.syrous.pacman.GameState
 
 interface GameController {
 
-    val gameState: PacmanState
+    val gameState: GameState
     fun startGame()
     fun pauseGame()
     fun resumeGame()

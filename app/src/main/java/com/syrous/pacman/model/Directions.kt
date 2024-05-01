@@ -7,3 +7,11 @@ enum class Directions(val move: Pair<Float, Float>, val angle: Float) {
     UP(Pair(0f, -1f), -90f),
     DOWN(Pair(0f, 1f), 90f),
 }
+
+fun Directions.getOppositeDir(): Directions = when (this) {
+        Directions.LEFT -> Directions.RIGHT
+        Directions.RIGHT -> Directions.LEFT
+        Directions.UP -> Directions.DOWN
+        Directions.DOWN -> Directions.UP
+        Directions.NONE -> Directions.NONE
+    }

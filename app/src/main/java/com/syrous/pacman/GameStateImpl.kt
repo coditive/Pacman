@@ -1,12 +1,20 @@
 package com.syrous.pacman
 
-import com.syrous.pacman.controller.PacmanController
-import com.syrous.pacman.controller.PacmanControllerImpl
+import com.syrous.pacman.controller.ghost.BlinkyController
+import com.syrous.pacman.controller.ghost.ClydeController
+import com.syrous.pacman.controller.ghost.InkyController
+import com.syrous.pacman.controller.ghost.PinkyController
+import com.syrous.pacman.controller.pacman.PacmanController
+import com.syrous.pacman.controller.pacman.PacmanControllerImpl
+import com.syrous.pacman.model.Blinky
+import com.syrous.pacman.model.Clyde
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.GameEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
-import com.syrous.pacman.model.Ghost
+import com.syrous.pacman.model.GhostMode
+import com.syrous.pacman.model.Inky
+import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.ENERGIZER_POSITION
 import com.syrous.pacman.util.HORIZONTAL_WALL_LIST
@@ -16,9 +24,10 @@ import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.VERTICAL_WALL_LIST
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import timber.log.Timber
 
-class PacmanStateImpl : PacmanState {
+class GameStateImpl : GameState {
 
     private var screenWidth = 0
     private var screenHeight = 0
@@ -28,21 +37,33 @@ class PacmanStateImpl : PacmanState {
     private var scaleFactorY = 0
     private var totalFood = 0
     private var foodEaten = 0
+    private var ghostLeavingCage = false
+    private var mainGhostMode = GhostMode.NONE
+    private var lastMainGhostMode = GhostMode.NONE
 
+    private val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     private val pacmanController: PacmanController = PacmanControllerImpl { gameInternalEvent ->
         when (gameInternalEvent) {
             is PacmanAteFood -> haveFood(gameInternalEvent.playFieldTile)
         }
     }
-
+    private val blinkyController = BlinkyController(this)
+    private val pinkyController = PinkyController(this)
+    private val inkyController = InkyController(this)
+    private val clydeController = ClydeController(this)
+    private val ghostControllerList = listOf(blinkyController, pinkyController, inkyController, clydeController)
 
     override val pacman = pacmanController.pacman
-    override val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val vWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val foodList = MutableStateFlow<MutableMap<Int, MutableMap<Int, Food>>>(mutableMapOf())
     override val score = MutableStateFlow(0)
-    override val ghosts: MutableStateFlow<List<Ghost>> = MutableStateFlow(listOf())
+
+    override val blinky: StateFlow<Blinky> = blinkyController.ghost
+    override val pinky: StateFlow<Pinky> = pinkyController.ghost
+    override val inky: StateFlow<Inky> = inkyController.ghost
+    override val clyde: StateFlow<Clyde> = clydeController.ghost
+
     override val isPaused = MutableStateFlow(false)
     override val gameEvent = MutableSharedFlow<GameEvent>()
 
@@ -185,7 +206,9 @@ class PacmanStateImpl : PacmanState {
     }
 
     private fun initializeGhosts() {
-
+        ghostControllerList.forEach {
+            it.init(playField, scaleFactorX, scaleFactorY)
+        }
     }
 
     private fun createFood() {
@@ -273,6 +296,22 @@ class PacmanStateImpl : PacmanState {
 
     override fun moveRight() {
         pacmanController.moveRight()
+    }
+
+    override fun isGhostExitingCage(): Boolean {
+        return ghostLeavingCage
+    }
+
+    override fun setGhostExitingCage(ghostExitingCageNow: Boolean) {
+        ghostLeavingCage = ghostExitingCageNow
+    }
+
+    override fun getMainGhostMain(): GhostMode {
+        return mainGhostMode
+    }
+
+    override fun getLastMainGhostMode(): GhostMode {
+        return lastMainGhostMode
     }
 
     private fun initializePacman() {

@@ -20,12 +20,3 @@ fun ActorUpdateInfo.toPacman(scaleFactorX: Int, scaleFactorY: Int): Pacman = Pac
     nextDir = this.nextDir
 )
 
-fun Pacman.toActorUpdateInfo(): ActorUpdateInfo =  ActorUpdateInfo(
-    position = this.position,
-    tilePos = this.tilePos,
-    lastGoodTilePos = this.lastGoodTilePos,
-    lastActiveDir = this.lastActiveDir,
-    direction = this.direction,
-    nextDir = this.nextDir,
-)
-    

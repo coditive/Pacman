@@ -280,3 +280,5 @@ val ENERGIZER_POSITION = listOf(
     Pair(27, 4),
     Pair(27, 30)
 )
+
+val CAGE_ENTRANCE_TILE = Pair(16, 12)

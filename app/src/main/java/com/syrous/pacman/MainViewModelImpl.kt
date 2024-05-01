@@ -17,7 +17,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     override val currentScreen: MutableStateFlow<GameScreen> =
         MutableStateFlow(GameScreen.START_SCREEN)
 
-    override var gameState: PacmanState = PacmanStateImpl()
+    override var gameState: GameState = GameStateImpl()
     private var isPaused: Boolean = true
     private var isStarted: Boolean = false
     private var gameLoop: Job? = null

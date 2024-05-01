@@ -1,4 +1,4 @@
-package com.syrous.pacman.controller
+package com.syrous.pacman.controller.pacman
 
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile

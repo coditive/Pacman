@@ -1,6 +1,5 @@
 package com.syrous.pacman.screen
 
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
@@ -37,7 +36,7 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.syrous.pacman.PacmanState
+import com.syrous.pacman.GameState
 import com.syrous.pacman.R
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
@@ -61,7 +60,7 @@ sealed class GamePlayScreenAction {
 
 class GamePlay(
     private val ghostImageList: List<ImageBitmap>,
-    private val gameState: PacmanState,
+    private val gameState: GameState,
     private val performAction: (GamePlayScreenAction) -> Unit
 ) {
 
@@ -74,7 +73,6 @@ class GamePlay(
         pacmanColor = MaterialTheme.colorScheme.primary
         wallColor = MaterialTheme.colorScheme.onSurface
         foodColor = MaterialTheme.colorScheme.secondary
-        Log.d("GamePlayScreen", "Initialize called!!")
     }
 
     @Composable
@@ -111,7 +109,6 @@ class GamePlay(
     @Composable
     fun PacmanPlayer(modifier: Modifier = Modifier) {
         Box(modifier = modifier) {
-            Log.d("GamePlayScreen", "PacmanPlayerBox called!!!")
             PacmanGameWalls(modifier = Modifier.fillMaxSize())
             PacmanScreenLayout(modifier = Modifier.fillMaxSize())
             PacmanActorComposable(modifier = Modifier.fillMaxSize())
@@ -122,7 +119,6 @@ class GamePlay(
     private fun PacmanGameWalls(modifier: Modifier = Modifier) {
         val vGameWalls = gameState.vWallList.collectAsState().value
         val hGameWalls = gameState.hWallList.collectAsState().value
-        Log.d("GamePlayScreen", "PacmanGameWall before canvas called!!!")
         Canvas(modifier = modifier) {
             for (wall in vGameWalls.keys) {
                 val (x1, y1) = wall

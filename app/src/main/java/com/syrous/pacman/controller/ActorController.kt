@@ -6,25 +6,21 @@ import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.UnitScale
-import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
-abstract class ActorController(
+abstract class ActorController {
 
-) {
-
-    lateinit var playField: Map<Int, Map<Int, Tile>>
+    protected lateinit var playField: Map<Int, Map<Int, Tile>>
 
     abstract fun move()
     abstract fun adjustOverShootOnEnteringTile(
-        playFieldTile: Pair<Int, Int>,
+        playFieldTile: Tile,
         updateActor: (ActorUpdateInfo) -> Unit
     )
-
-    abstract fun reverseOnEnteringTile()
-    abstract fun handleObjectOnEncounter()
-    abstract fun decideNextDirAfterEnteredTile()
+    abstract fun reverseOnEnteringTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit)
+    abstract fun handleObjectOnEncounter(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit)
+    abstract fun decideNextDirAfterEnteredTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit)
     abstract fun haveFood(tilePos: Pair<Int, Int>)
     fun getOppositeDirection(directions: Directions): Directions {
         return when (directions) {
@@ -36,7 +32,10 @@ abstract class ActorController(
         }
     }
 
-    fun getPlayFieldTile(tile: Pair<Int, Int>): Pair<Int, Int> =
+    fun getPlayFieldTile(tile: Pair<Int, Int>): Tile =
+        playField[tile.first * UnitScale]!![tile.second * UnitScale]!!
+
+    fun getPlayFieldTilePos(tile: Pair<Int, Int>): Pair<Int, Int> =
         Pair(tile.first * UnitScale, tile.second * UnitScale)
 
     fun step(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
@@ -81,8 +80,8 @@ abstract class ActorController(
         }
     }
 
-    private fun canHaveFood(playFieldTile: Pair<Int, Int>): Boolean =
-        playField[playFieldTile.first]!![playFieldTile.second]!!.food != Food.NONE
+    private fun canHaveFood(playFieldTile: Tile): Boolean =
+        playFieldTile.food != Food.NONE
 
     private fun enteringTile(
         actor: Actor,
@@ -100,10 +99,12 @@ abstract class ActorController(
         adjustOverShootOnEnteringTile(getPlayFieldTile(tilePos)) {
             actorUpdateInfo = it
         }
-        reverseOnEnteringTile()
+        reverseOnEnteringTile(actor) {
+            actorUpdateInfo = it
+        }
 
         if (canHaveFood(getPlayFieldTile(tilePos))) {
-            haveFood(getPlayFieldTile(tilePos))
+            haveFood(getPlayFieldTilePos(tilePos))
         }
 
         updateActor(actorUpdateInfo)
@@ -114,12 +115,11 @@ abstract class ActorController(
         val nextDir = actor.nextDir
         val tilePos = actor.tilePos
         var lastActiveDir = actor.lastActiveDir
-        val tile = getPlayFieldTile(tilePos)
 
-        handleObjectOnEncounter()
-        decideNextDirAfterEnteredTile()
-        val playFieldTile = playField[tile.first]!![tile.second]!!
-        Timber.d("entered Tile playFieldTile -> $playFieldTile")
+        handleObjectOnEncounter(actor, updateActor)
+        decideNextDirAfterEnteredTile(actor, updateActor)
+
+        val playFieldTile = getPlayFieldTile(tilePos)
         if (playFieldTile.isIntersection) {
             if (nextDir != Directions.NONE && playFieldTile.allowedDir.contains(nextDir)) {
                 if (dir != Directions.NONE) {
