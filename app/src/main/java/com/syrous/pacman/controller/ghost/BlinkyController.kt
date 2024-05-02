@@ -7,6 +7,7 @@ import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.model.toBlinky
 import com.syrous.pacman.util.UnitScale
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -44,6 +45,15 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
         scatterPos = Pair(1 * UnitScale.toFloat(), 1 * UnitScale.toFloat())
+        actor = Blinky(
+            position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
+            tilePos = Pair(15, 12),
+            lastGoodTilePos = Pair(15, 12),
+            screenPos = Pair(15f * scaleFactorX, 12f * scaleFactorY),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.NONE,
+        )
         ghost.value = Blinky(
             position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
             tilePos = Pair(15, 12),
@@ -68,87 +78,27 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
                 followRoutine(ghost.value) { actorUpdateInfo ->
-                    ghost.value = Blinky(
-                        position = actorUpdateInfo.position,
-                        tilePos = actorUpdateInfo.tilePos,
-                        screenPos = Pair(
-                            actorUpdateInfo.position.first * scaleFactorX,
-                            actorUpdateInfo.position.second * scaleFactorY
-                        ),
-                        lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                        lastActiveDir = actorUpdateInfo.lastActiveDir,
-                        direction = actorUpdateInfo.direction,
-                        nextDir = actorUpdateInfo.nextDir
-                    )
-
+                    ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.ENTERING_CAGE) {
                     followRoutine(ghost.value) { actorUpdateInfo ->
-                        ghost.value = Blinky(
-                            position = actorUpdateInfo.position,
-                            tilePos = actorUpdateInfo.tilePos,
-                            screenPos = Pair(
-                                actorUpdateInfo.position.first * scaleFactorX,
-                                actorUpdateInfo.position.second * scaleFactorY
-                            ),
-                            lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                            lastActiveDir = actorUpdateInfo.lastActiveDir,
-                            direction = actorUpdateInfo.direction,
-                            nextDir = actorUpdateInfo.nextDir
-                        )
+                        ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                     }
                 }
             } else {
                 step(ghost.value) { actorUpdateInfo ->
-                    ghost.value = Blinky(
-                        position = actorUpdateInfo.position,
-                        tilePos = actorUpdateInfo.tilePos,
-                        screenPos = Pair(
-                            actorUpdateInfo.position.first * scaleFactorX,
-                            actorUpdateInfo.position.second * scaleFactorY
-                        ),
-                        lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                        lastActiveDir = actorUpdateInfo.lastActiveDir,
-                        direction = actorUpdateInfo.direction,
-                        nextDir = actorUpdateInfo.nextDir
-                    )
-
+                    ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.EATEN) {
                     step(ghost.value) { actorUpdateInfo ->
-                        ghost.value = Blinky(
-                            position = actorUpdateInfo.position,
-                            tilePos = actorUpdateInfo.tilePos,
-                            screenPos = Pair(
-                                actorUpdateInfo.position.first * scaleFactorX,
-                                actorUpdateInfo.position.second * scaleFactorY
-                            ),
-                            lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                            lastActiveDir = actorUpdateInfo.lastActiveDir,
-                            direction = actorUpdateInfo.direction,
-                            nextDir = actorUpdateInfo.nextDir
-                        )
-
+                        ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                     }
                 }
             }
-        }
-    }
-
-    override fun switchGhostMode(ghostMode: GhostMode) {
-        switchGhostMode(ghostMode, ghost.value) { actorUpdateInfo ->
-            ghost.value = Blinky(
-                position = actorUpdateInfo.position,
-                tilePos = actorUpdateInfo.tilePos,
-                screenPos = Pair(
-                    actorUpdateInfo.position.first * scaleFactorX,
-                    actorUpdateInfo.position.second * scaleFactorY
-                ),
-                lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                lastActiveDir = actorUpdateInfo.lastActiveDir,
-                direction = actorUpdateInfo.direction,
-                nextDir = actorUpdateInfo.nextDir
-            )
         }
     }
 

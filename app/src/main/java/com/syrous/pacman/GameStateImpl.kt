@@ -240,7 +240,7 @@ class GameStateImpl : GameState {
         ghostControllerList.forEach {
             it.init(playField, scaleFactorX / UnitScale, scaleFactorY / UnitScale)
         }
-        switchMainGhostMode(PATROLLING, false)
+        switchMainGhostMode(PATROLLING, true)
         for (ghost in 1 until ghostControllerList.size) {
             ghostControllerList[ghost].switchGhostMode(GhostMode.IN_CAGE)
         }
@@ -278,12 +278,17 @@ class GameStateImpl : GameState {
                 if (mode == GhostMode.FLEEING) {
                     ghost.setModeChangedWhileInCage(false)
                 }
-                if (ghost.getGhostMode() != GhostMode.EATEN && ghost.getGhostMode() != GhostMode.IN_CAGE && ghost.getGhostMode() !== GhostMode.LEAVING_CAGE && ghost.getGhostMode() !== GhostMode.RE_LEAVING_CAGE && ghost.getGhostMode() !== GhostMode.ENTERING_CAGE || justRestartGame) {
+                if (ghost.getGhostMode() != GhostMode.EATEN &&
+                    ghost.getGhostMode() != GhostMode.IN_CAGE &&
+                    ghost.getGhostMode() != GhostMode.LEAVING_CAGE &&
+                    ghost.getGhostMode() != GhostMode.RE_LEAVING_CAGE &&
+                    ghost.getGhostMode() != GhostMode.ENTERING_CAGE ||
+                    justRestartGame) {
 
                     // If it is not immediately after restart the game (justRestartGame:false),
                     // a ghost reverse its direction
                     // when its mode change from other than FRIGHTENED (CHASE or SCATTER) to another mode.
-                    if (!justRestartGame && ghost.getGhostMode() != GhostMode.FLEEING && ghost.getGhostMode() !== mode) {
+                    if (!justRestartGame && ghost.getGhostMode() != GhostMode.FLEEING && ghost.getGhostMode() != mode) {
                         ghost.setReverseDirectionNext(true)
                     }
 

@@ -6,6 +6,7 @@ import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.Inky
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.model.toInky
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class InkyController(gameState: GameState) : GhostController(gameState) {
@@ -64,90 +65,28 @@ class InkyController(gameState: GameState) : GhostController(gameState) {
     override fun move() {
         if(mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE) {
             if (followingRoutine) {
-                followRoutine(ghost.value) {actorUpdateInfo ->
-                    ghost.value = Inky(
-                        position = actorUpdateInfo.position,
-                        tilePos = actorUpdateInfo.tilePos,
-                        screenPos = Pair(
-                            actorUpdateInfo.position.first * scaleFactorX,
-                            actorUpdateInfo.position.second * scaleFactorY
-                        ),
-                        lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                        lastActiveDir = actorUpdateInfo.lastActiveDir,
-                        direction = actorUpdateInfo.direction,
-                        nextDir = actorUpdateInfo.nextDir
-                    )
-
+                followRoutine(ghost.value) { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine(ghost.value) {actorUpdateInfo ->
-                        ghost.value = Inky(
-                            position = actorUpdateInfo.position,
-                            tilePos = actorUpdateInfo.tilePos,
-                            screenPos = Pair(
-                                actorUpdateInfo.position.first * scaleFactorX,
-                                actorUpdateInfo.position.second * scaleFactorY
-                            ),
-                            lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                            lastActiveDir = actorUpdateInfo.lastActiveDir,
-                            direction = actorUpdateInfo.direction,
-                            nextDir = actorUpdateInfo.nextDir
-                        )
-
+                    followRoutine(ghost.value) { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                     }
                 }
             } else {
-                step(ghost.value) {actorUpdateInfo ->
-                    ghost.value = Inky(
-                        position = actorUpdateInfo.position,
-                        tilePos = actorUpdateInfo.tilePos,
-                        screenPos = Pair(
-                            actorUpdateInfo.position.first * scaleFactorX,
-                            actorUpdateInfo.position.second * scaleFactorY
-                        ),
-                        lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                        lastActiveDir = actorUpdateInfo.lastActiveDir,
-                        direction = actorUpdateInfo.direction,
-                        nextDir = actorUpdateInfo.nextDir
-                    )
-
+                step(ghost.value) { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                 }
-                if(mode == GhostMode.EATEN) {
-                    step(ghost.value) {actorUpdateInfo ->
-                        ghost.value = Inky(
-                            position = actorUpdateInfo.position,
-                            tilePos = actorUpdateInfo.tilePos,
-                            screenPos = Pair(
-                                actorUpdateInfo.position.first * scaleFactorX,
-                                actorUpdateInfo.position.second * scaleFactorY
-                            ),
-                            lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                            lastActiveDir = actorUpdateInfo.lastActiveDir,
-                            direction = actorUpdateInfo.direction,
-                            nextDir = actorUpdateInfo.nextDir
-                        )
-
+                if (mode == GhostMode.EATEN) {
+                    step(ghost.value) { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                     }
                 }
             }
-        }
-    }
-
-    override fun switchGhostMode(ghostMode: GhostMode) {
-        switchGhostMode(ghostMode, ghost.value) {
-                actorUpdateInfo ->
-            ghost.value = Inky(
-                position = actorUpdateInfo.position,
-                tilePos = actorUpdateInfo.tilePos,
-                screenPos = Pair(
-                    actorUpdateInfo.position.first * scaleFactorX,
-                    actorUpdateInfo.position.second * scaleFactorY
-                ),
-                lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
-                lastActiveDir = actorUpdateInfo.lastActiveDir,
-                direction = actorUpdateInfo.direction,
-                nextDir = actorUpdateInfo.nextDir
-            )
         }
     }
 

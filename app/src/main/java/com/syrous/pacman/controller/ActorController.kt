@@ -4,25 +4,20 @@ import com.syrous.pacman.model.Actor
 import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
-import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.UnitScale
-import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
 abstract class ActorController {
 
     protected lateinit var playField: Map<Int, Map<Int, Tile>>
-
+    protected lateinit var actor: Actor
     abstract fun move()
-    abstract fun adjustOverShootOnEnteringTile(
-        playFieldTile: Tile,
-        updateActor: (ActorUpdateInfo) -> Unit
-    )
-    abstract fun reverseOnEnteringTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit)
-    abstract fun handleObjectOnEncounter(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit)
-    abstract fun decideNextDirAfterEnteredTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit)
+    abstract fun adjustOverShootOnEnteringTile(playFieldTile: Tile, actor: Actor)
+    abstract fun reverseOnEnteringTile(actor: Actor)
+    abstract fun handleObjectOnEncounter(actor: Actor)
+    abstract fun decideNextDirAfterEnteredTile(actor: Actor)
     abstract fun haveFood(tilePos: Pair<Int, Int>)
     fun getOppositeDirection(directions: Directions): Directions {
         return when (directions) {
@@ -48,7 +43,7 @@ abstract class ActorController {
         val pacX = pos.first + dir.move.first
         val pacY = pos.second + dir.move.second
         val newPos = Pair(pacX, pacY)
-        Timber.d("before update actor -> newPos -> $newPos, dir -> $dir, tilePos -> $tilePos ")
+
         updateActor(
             ActorUpdateInfo(
                 position = newPos,
@@ -70,14 +65,13 @@ abstract class ActorController {
             floor(imaginaryX) * UnitScale,
             floor(imaginaryY) * UnitScale
         )
-        Timber.d("nextTile -> $nextTile, tilePos -> $tilePos,imaginaryX -> $imaginaryX, imaginaryY -> $imaginaryY,  newPos -> $newPos, enteredTile -> $enteredTile")
         when {
             nextTile.first != tilePos.first || nextTile.second != tilePos.second -> {
-                enteringTile(actor, nextTile, updateActor)
+                enteringTile(nextTile, updateActor)
             }
 
             enteredTile == newPos -> {
-                enteredTile(actor, updateActor)
+                enteredTile(updateActor)
             }
         }
     }
@@ -86,35 +80,35 @@ abstract class ActorController {
         playFieldTile.food != Food.NONE
 
     private fun enteringTile(
-        actor: Actor,
         tilePos: Pair<Int, Int>,
         updateActor: (ActorUpdateInfo) -> Unit
     ) {
-        var actorUpdateInfo = ActorUpdateInfo(
-            position = actor.position,
-            tilePos = tilePos,
-            lastGoodTilePos = tilePos,
-            lastActiveDir = actor.lastActiveDir,
-            direction = actor.direction,
-            nextDir = actor.nextDir,
-        )
-        adjustOverShootOnEnteringTile(getPlayFieldTile(tilePos)) {
-            actorUpdateInfo = it
-        }
-        reverseOnEnteringTile(actor) {
-            Timber.d("reverseOnEnteringTile -> $it")
-            actorUpdateInfo = it
-        }
+        adjustOverShootOnEnteringTile(getPlayFieldTile(tilePos), actor)
+
+        reverseOnEnteringTile(actor)
 
         if (canHaveFood(getPlayFieldTile(tilePos))) {
             haveFood(getPlayFieldTilePos(tilePos))
         }
-        Timber.d("actorUpdateInfo -> $actorUpdateInfo")
 
-        updateActor(actorUpdateInfo)
+        updateActor(
+            ActorUpdateInfo(
+                position = actor.position,
+                tilePos = tilePos,
+                lastGoodTilePos = tilePos,
+                lastActiveDir = actor.lastActiveDir,
+                direction = actor.direction,
+                nextDir = actor.nextDir,
+            )
+        )
     }
 
-    private fun enteredTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    private fun enteredTile(updateActor: (ActorUpdateInfo) -> Unit) {
+
+        handleObjectOnEncounter(actor)
+
+        decideNextDirAfterEnteredTile(actor)
+
         var actorUpdateInfo = ActorUpdateInfo(
             position = actor.position,
             tilePos = actor.tilePos,
@@ -123,25 +117,24 @@ abstract class ActorController {
             direction = actor.direction,
             nextDir = actor.nextDir,
         )
-        Timber.d("newTile Entered!! and actor is ghost -> ${actor is Ghost}")
-
-        handleObjectOnEncounter(actor) {
-            actorUpdateInfo = it
-        }
-        decideNextDirAfterEnteredTile(actor) {
-            actorUpdateInfo = it
-        }
 
         val playFieldTile = getPlayFieldTile(actorUpdateInfo.tilePos)
         if (playFieldTile.isIntersection) {
-            if (actorUpdateInfo.nextDir != Directions.NONE && playFieldTile.allowedDir.contains(actorUpdateInfo.nextDir)) {
-                if (actorUpdateInfo.direction != Directions.NONE) {
-                    actorUpdateInfo = actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
+            if (actor.nextDir != Directions.NONE && playFieldTile.allowedDir.contains(actor.nextDir)) {
+                if (actor.direction != Directions.NONE) {
+                    actorUpdateInfo =
+                        actorUpdateInfo.copy(lastActiveDir = actor.direction)
                 }
-                updateActor(actorUpdateInfo.copy(direction = actorUpdateInfo.nextDir, nextDir = Directions.NONE))
-            } else if (playFieldTile.allowedDir.contains(actorUpdateInfo.direction).not()) {
-                if (actorUpdateInfo.direction != Directions.NONE) {
-                    actorUpdateInfo = actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
+                updateActor(
+                    actorUpdateInfo.copy(
+                        direction = actorUpdateInfo.nextDir,
+                        nextDir = Directions.NONE
+                    )
+                )
+            } else if (playFieldTile.allowedDir.contains(actor.direction).not()) {
+                if (actor.direction != Directions.NONE) {
+                    actorUpdateInfo =
+                        actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
                 }
                 updateActor(
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)

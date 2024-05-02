@@ -54,8 +54,6 @@ abstract class GhostController(
                     .not() -> {
                     switchGhostMode(
                         if (eatenInFrightenedMode) GhostMode.RE_LEAVING_CAGE else GhostMode.LEAVING_CAGE,
-                        actor,
-                        updateActor
                     )
                 }
 
@@ -64,15 +62,15 @@ abstract class GhostController(
                     if (mode == GhostMode.RE_LEAVING_CAGE && ghostMode == GhostMode.FLEEING) {
                         ghostMode = gameState.getLastMainGhostMode()
                     }
-                    switchGhostMode(ghostMode, actor, updateActor)
+                    switchGhostMode(ghostMode)
                 }
 
                 mode == GhostMode.ENTERING_CAGE -> {
                     if (this == BlinkyController::class || freeToExitCage) {
-                        switchGhostMode(GhostMode.RE_LEAVING_CAGE, actor, updateActor)
+                        switchGhostMode(GhostMode.RE_LEAVING_CAGE)
                     } else {
                         eatenInFrightenedMode = true
-                        switchGhostMode(GhostMode.IN_CAGE, actor, updateActor)
+                        switchGhostMode(GhostMode.IN_CAGE)
                     }
                 }
 
@@ -140,11 +138,7 @@ abstract class GhostController(
         }
     }
 
-    protected fun switchGhostMode(
-        mode: GhostMode,
-        actor: Actor,
-        updateActor: (ActorUpdateInfo) -> Unit
-    ) {
+    fun switchGhostMode(mode: GhostMode) {
         val oldMode = this.mode
         this.mode = mode
         when (oldMode) {
@@ -207,10 +201,8 @@ abstract class GhostController(
 
     private fun decideNextDir(
         ghost: Ghost,
-        reversed: Boolean,
-        updateGhost: (ActorUpdateInfo) -> Unit
+        reversed: Boolean
     ) {
-        Timber.d("decideNextDir -> ghost -> $ghost")
         val currentTile = ghost.tilePos
         val dir = ghost.direction
         var nextDir = ghost.nextDir
@@ -250,16 +242,14 @@ abstract class GhostController(
                             nextDir = preferredDir
                         }
                     }
-                    updateGhost(
-                        ActorUpdateInfo(
-                            position = ghost.position,
-                            tilePos = ghost.tilePos,
-                            lastGoodTilePos = ghost.lastGoodTilePos,
-                            direction = ghost.direction,
-                            lastActiveDir = ghost.lastActiveDir,
-                            nextDir = nextDir,
-                        )
-                    )
+
+                    actor = when (ghost) {
+                        is Blinky -> ghost.copy(nextDir = nextDir)
+                        is Clyde -> ghost.copy(nextDir = nextDir)
+                        is Inky -> ghost.copy(nextDir = nextDir)
+                        is Pinky -> ghost.copy(nextDir = nextDir)
+                    }
+                    Timber.d("After Deciding direction -> $actor")
                 }
 
                 GhostMode.FLEEING -> {
@@ -270,16 +260,12 @@ abstract class GhostController(
                         || newDir == dir.getOppositeDir()
                     )
 
-                    updateGhost(
-                        ActorUpdateInfo(
-                            position = ghost.position,
-                            tilePos = ghost.tilePos,
-                            lastGoodTilePos = ghost.lastGoodTilePos,
-                            direction = ghost.direction,
-                            lastActiveDir = ghost.lastActiveDir,
-                            nextDir = nextDir,
-                        )
-                    )
+                    actor = when (ghost) {
+                        is Blinky -> ghost.copy(nextDir = nextDir)
+                        is Clyde -> ghost.copy(nextDir = nextDir)
+                        is Inky -> ghost.copy(nextDir = nextDir)
+                        is Pinky -> ghost.copy(nextDir = nextDir)
+                    }
                 }
 
                 else -> {}
@@ -296,53 +282,41 @@ abstract class GhostController(
 
     fun getGhostMode(): GhostMode = mode
 
-    abstract fun switchGhostMode(ghostMode: GhostMode)
     abstract fun updateTargetPos(pos: Pair<Float, Float>)
 
     abstract fun getMovesInCage(): List<MoveInCage>
 
     override fun adjustOverShootOnEnteringTile(
         playFieldTile: Tile,
-        updateActor: (ActorUpdateInfo) -> Unit
+        actor: Actor
     ) {
     }
 
-    override fun reverseOnEnteringTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    override fun reverseOnEnteringTile(actor: Actor) {
         if (this.reverseDirectionsNext) { // reverse its direction
             if (actor is Ghost) {
                 val dir = actor.direction.getOppositeDir()
                 val nextDir = Directions.NONE
                 this.reverseDirectionsNext = false
-                updateActor(
-                    ActorUpdateInfo(
-                        position = actor.position,
-                        tilePos = actor.tilePos,
-                        lastGoodTilePos = actor.lastGoodTilePos,
-                        direction = dir,
-                        lastActiveDir = actor.lastActiveDir,
-                        nextDir = nextDir,
-                    )
-                )
                 val newActor = when (actor) {
                     is Blinky -> actor.copy(direction = dir, nextDir = nextDir)
                     is Clyde -> actor.copy(direction = dir, nextDir = nextDir)
                     is Inky -> actor.copy(direction = dir, nextDir = nextDir)
                     is Pinky -> actor.copy(direction = dir, nextDir = nextDir)
                 }
-                decideNextDir(newActor, reversed = true, updateActor)
+                decideNextDir(newActor, reversed = true)
             }
         }
     }
 
-    override fun handleObjectOnEncounter(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    override fun handleObjectOnEncounter(actor: Actor) {
     }
 
     override fun decideNextDirAfterEnteredTile(
-        actor: Actor,
-        updateActor: (ActorUpdateInfo) -> Unit
+        actor: Actor
     ) {
         if (actor is Ghost) {
-            decideNextDir(ghost = actor, updateGhost = updateActor, reversed = false)
+            decideNextDir(ghost = actor, reversed = false)
         }
     }
 

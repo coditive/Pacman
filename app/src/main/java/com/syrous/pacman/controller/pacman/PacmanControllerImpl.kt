@@ -2,12 +2,12 @@ package com.syrous.pacman.controller.pacman
 
 import com.syrous.pacman.controller.ActorController
 import com.syrous.pacman.model.Actor
-import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GameInternalEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.model.toPacman
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.plus
@@ -40,6 +40,15 @@ class PacmanControllerImpl(
         this.playField = playField
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
+        this.actor = Pacman(
+            position = Pair(14f * UnitScale, 24f * UnitScale),
+            tilePos = Pair(14, 24),
+            screenPos = Pair(14f * scaleFactorX, 24f * scaleFactorY),
+            lastGoodTilePos = Pair(14, 24),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.RIGHT
+        )
         pacman.value = Pacman(
             position = Pair(14f * UnitScale, 24f * UnitScale),
             tilePos = Pair(14, 24),
@@ -56,13 +65,14 @@ class PacmanControllerImpl(
     }
 
     override fun move() {
-//        if (requestedChangeDir != Directions.NONE) {
-//            handleDirectionChange(requestedChangeDir)
-//            requestedChangeDir = Directions.NONE
-//        }
-//        step(pacman.value) { actorUpdateInfo ->
-//            pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
-//        }
+        if (requestedChangeDir != Directions.NONE) {
+            handleDirectionChange(requestedChangeDir)
+            requestedChangeDir = Directions.NONE
+        }
+        step(pacman.value) { actorUpdateInfo ->
+            pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
+            actor = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
+        }
     }
 
     override fun moveLeft() {
@@ -83,33 +93,30 @@ class PacmanControllerImpl(
 
     override fun adjustOverShootOnEnteringTile(
         playFieldTile: Tile,
-        updateActor: (ActorUpdateInfo) -> Unit
+        actor: Actor
     ) {
-        if (playFieldTile.isPath.not()) {
-            val lastGoodTile = pacman.value.lastGoodTilePos
-            updateActor(
-                ActorUpdateInfo(
+        if (actor is Pacman) {
+            if (playFieldTile.isPath.not()) {
+                val lastGoodTile = pacman.value.lastGoodTilePos
+                this.actor = actor.copy(
                     position = Pair(
                         lastGoodTile.first * UnitScale.toFloat(),
                         lastGoodTile.second * UnitScale.toFloat()
                     ),
                     tilePos = lastGoodTile,
-                    lastGoodTilePos = pacman.value.lastGoodTilePos,
                     direction = Directions.NONE,
-                    lastActiveDir = pacman.value.lastActiveDir,
-                    nextDir = pacman.value.nextDir,
                 )
-            )
+            }
         }
     }
 
-    override fun reverseOnEnteringTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    override fun reverseOnEnteringTile(actor: Actor) {
     }
 
-    override fun handleObjectOnEncounter(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    override fun handleObjectOnEncounter(actor: Actor) {
     }
 
-    override fun decideNextDirAfterEnteredTile(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    override fun decideNextDirAfterEnteredTile(actor: Actor) {
     }
 
     override fun haveFood(tilePos: Pair<Int, Int>) {
@@ -163,7 +170,10 @@ class PacmanControllerImpl(
                                 newPos.first * UnitScale,
                                 newPos.second * UnitScale
                             ),
-                            screenPos = Pair(newPos.first * scaleFactorX, newPos.second * scaleFactorY),
+                            screenPos = Pair(
+                                newPos.first * scaleFactorX,
+                                newPos.second * scaleFactorY
+                            ),
                             direction = dir,
                             lastActiveDir = dir
                         )
