@@ -12,7 +12,11 @@ import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.GameEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
+import com.syrous.pacman.model.GhostMode.CHASING
+import com.syrous.pacman.model.GhostMode.FLEEING
+import com.syrous.pacman.model.GhostMode.PATROLLING
 import com.syrous.pacman.model.Inky
 import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
@@ -40,6 +44,8 @@ class GameStateImpl : GameState {
     private var ghostLeavingCage = false
     private var mainGhostMode = GhostMode.NONE
     private var lastMainGhostMode = GhostMode.NONE
+    private var modeScoreMultiplier = 0
+    private var gamePlayMode: GamePlayMode = GamePlayMode.NEWGAME_STARTING
 
     private val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     private val pacmanController: PacmanController = PacmanControllerImpl { gameInternalEvent ->
@@ -51,7 +57,8 @@ class GameStateImpl : GameState {
     private val pinkyController = PinkyController(this)
     private val inkyController = InkyController(this)
     private val clydeController = ClydeController(this)
-    private val ghostControllerList = listOf(blinkyController, pinkyController, inkyController, clydeController)
+    private val ghostControllerList =
+        listOf(blinkyController, pinkyController, inkyController, clydeController)
 
     override val pacman = pacmanController.pacman
     override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
@@ -161,10 +168,22 @@ class GameStateImpl : GameState {
                 }
 
                 playField[startX]!![y] =
-                    prepareTile(startX, y, p.tunnel, isIntersection = true, food = playField[startX]!![y]!!.food)
+                    prepareTile(
+                        startX,
+                        y,
+                        p.tunnel,
+                        isIntersection = true,
+                        food = playField[startX]!![y]!!.food
+                    )
 
                 playField[endX]!![y] =
-                    prepareTile(endX, y, p.tunnel, isIntersection = true, playField[endX]!![y]!!.food)
+                    prepareTile(
+                        endX,
+                        y,
+                        p.tunnel,
+                        isIntersection = true,
+                        playField[endX]!![y]!!.food
+                    )
             } else {
                 val endY = (p.y + p.verticalLength - 1) * UnitScale
                 val x = p.x * UnitScale
@@ -174,10 +193,22 @@ class GameStateImpl : GameState {
                 }
 
                 playField[x]!![startY] =
-                    prepareTile(x, startY, p.tunnel,isIntersection = true, playField[x]!![startY]!!.food)
+                    prepareTile(
+                        x,
+                        startY,
+                        p.tunnel,
+                        isIntersection = true,
+                        playField[x]!![startY]!!.food
+                    )
 
                 playField[x]!![endY] =
-                    prepareTile(x, endY, p.tunnel, isIntersection = true, playField[x]!![endY]!!.food)
+                    prepareTile(
+                        x,
+                        endY,
+                        p.tunnel,
+                        isIntersection = true,
+                        playField[x]!![endY]!!.food
+                    )
             }
         }
 
@@ -207,7 +238,62 @@ class GameStateImpl : GameState {
 
     private fun initializeGhosts() {
         ghostControllerList.forEach {
-            it.init(playField, scaleFactorX, scaleFactorY)
+            it.init(playField, scaleFactorX / UnitScale, scaleFactorY / UnitScale)
+        }
+        switchMainGhostMode(PATROLLING, false)
+        for (ghost in 1 until ghostControllerList.size) {
+            ghostControllerList[ghost].switchGhostMode(GhostMode.IN_CAGE)
+        }
+    }
+
+    private fun switchMainGhostMode(mode: GhostMode, justRestartGame: Boolean) {
+        if (mode == GhostMode.FLEEING) {
+            for (ghost in ghostControllerList) {
+                ghost.setReverseDirectionNext(true) // If frightTime is 0, a frightened ghost only reverse its direction.
+            }
+        } else {
+            val oldMainGhostMode = mainGhostMode
+            if (mode == GhostMode.FLEEING && mainGhostMode != GhostMode.FLEEING) {
+                lastMainGhostMode = mainGhostMode
+            }
+            mainGhostMode = mode
+            if (mode == GhostMode.FLEEING || oldMainGhostMode == GhostMode.FLEEING) {
+
+            }
+            when (mode) {
+                CHASING, PATROLLING -> {
+
+                }
+
+                FLEEING -> {
+                    modeScoreMultiplier = 1
+                }
+
+                else -> {}
+            }
+            for (ghost in ghostControllerList) {
+                if (mode != GhostMode.ENTERING_CAGE && !justRestartGame) {
+                    ghost.setModeChangedWhileInCage(true)
+                }
+                if (mode == GhostMode.FLEEING) {
+                    ghost.setModeChangedWhileInCage(false)
+                }
+                if (ghost.getGhostMode() != GhostMode.EATEN && ghost.getGhostMode() != GhostMode.IN_CAGE && ghost.getGhostMode() !== GhostMode.LEAVING_CAGE && ghost.getGhostMode() !== GhostMode.RE_LEAVING_CAGE && ghost.getGhostMode() !== GhostMode.ENTERING_CAGE || justRestartGame) {
+
+                    // If it is not immediately after restart the game (justRestartGame:false),
+                    // a ghost reverse its direction
+                    // when its mode change from other than FRIGHTENED (CHASE or SCATTER) to another mode.
+                    if (!justRestartGame && ghost.getGhostMode() != GhostMode.FLEEING && ghost.getGhostMode() !== mode) {
+                        ghost.setReverseDirectionNext(true)
+                    }
+
+                    // If it is not immediately after restart the game
+                    // and a mode of each ghost is any of EATEN, IN_PEN, LEAVING_PEN, RE_LEAVING_FROM_PEN, or ENTERING_PEN,
+                    // it is not updated.
+                    ghost.switchGhostMode(mode)
+                }
+            }
+
         }
     }
 
@@ -254,7 +340,60 @@ class GameStateImpl : GameState {
 
     override suspend fun updatePositionAfterLoop() {
         pacmanController.move()
+        for (ghost in ghostControllerList) {
+            ghost.move()
+        }
     }
+
+    override fun handleTimers() {
+        handleGamePlayModeTimer()
+    }
+
+    private fun handleGamePlayModeTimer() {
+        when (gamePlayMode) {
+            GamePlayMode.GHOST_DIED -> {}
+            GamePlayMode.PLAYER_DYING -> {}
+            GamePlayMode.PLAYER_DIED -> {}
+            GamePlayMode.NEWGAME_STARTING -> {
+                changeGamePlayMode(GamePlayMode.NEWGAME_STARTED)
+            }
+
+            GamePlayMode.NEWGAME_STARTED, GamePlayMode.GAME_RESTARTED -> {
+                changeGamePlayMode(GamePlayMode.ORDINARY_PLAYING)
+            }
+
+            GamePlayMode.GAME_RESTARTING -> {
+                changeGamePlayMode(GamePlayMode.GAME_RESTARTED)
+            }
+
+            GamePlayMode.GAMEOVER -> TODO()
+            GamePlayMode.LEVEL_BEING_COMPLETED -> {}
+            GamePlayMode.LEVEL_COMPLETED -> TODO()
+            GamePlayMode.TRANSITION_INTO_NEXT_SCENE -> TODO()
+            else -> {}
+        }
+    }
+
+    private fun changeGamePlayMode(mode: GamePlayMode) {
+        gamePlayMode = mode
+//        when(mode) {
+//            GamePlayMode.ORDINARY_PLAYING -> TODO()
+//            GamePlayMode.GHOST_DIED -> TODO()
+//            GamePlayMode.PLAYER_DYING -> TODO()
+//            GamePlayMode.PLAYER_DIED -> TODO()
+//            GamePlayMode.NEWGAME_STARTING -> TODO()
+//            GamePlayMode.NEWGAME_STARTED -> TODO()
+//            GamePlayMode.GAME_RESTARTING -> TODO()
+//            GamePlayMode.GAME_RESTARTED -> TODO()
+//            GamePlayMode.GAMEOVER -> TODO()
+//            GamePlayMode.LEVEL_BEING_COMPLETED -> TODO()
+//            GamePlayMode.LEVEL_COMPLETED -> TODO()
+//            GamePlayMode.TRANSITION_INTO_NEXT_SCENE -> TODO()
+//            GamePlayMode.CUTSCENE -> TODO()
+//            GamePlayMode.KILL_SCREEN -> TODO()
+//        }
+    }
+
 
     private fun updateScore(food: Food) {
         foodEaten += 1
@@ -312,6 +451,10 @@ class GameStateImpl : GameState {
 
     override fun getLastMainGhostMode(): GhostMode {
         return lastMainGhostMode
+    }
+
+    override fun getGamePlayMode(): GamePlayMode {
+        return gamePlayMode
     }
 
     private fun initializePacman() {

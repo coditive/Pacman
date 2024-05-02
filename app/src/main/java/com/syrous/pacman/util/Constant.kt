@@ -9,20 +9,10 @@ const val UnitScale = 9
 const val PacmanRadius = 25f
 const val FoodRadius = 1
 const val EnergizerRadius = 5
-
-const val FoodUnitRadius = FoodRadius
-const val PacmanUnitRadius = PacmanRadius
-
 const val CutAngle = 40f
 const val EatAngle = 60f
+const val GhostSize = 80
 
-const val NumberOfEnemies = 2
-const val GhostSize = 100
-const val EnemyChaseSeconds = 7
-
-const val Fraction_1_2 = 0.5f
-const val Fraction_1_4 = 0.25f
-const val Fraction_3_4 = 0.75f
 
 
 val PATHS = listOf(

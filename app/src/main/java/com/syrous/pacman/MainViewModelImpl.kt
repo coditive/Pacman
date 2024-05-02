@@ -98,6 +98,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
         for (i in 0 until tickMultiplier + latency) {
             gameState.updatePositionAfterLoop()
+            gameState.handleTimers()
         }
     }
 

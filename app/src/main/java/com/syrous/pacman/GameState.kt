@@ -4,6 +4,7 @@ import com.syrous.pacman.model.Blinky
 import com.syrous.pacman.model.Clyde
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.GameEvent
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.Inky
 import com.syrous.pacman.model.Pacman
@@ -27,6 +28,7 @@ interface GameState {
 
     fun updateScreenDimensions(width: Int, height: Int)
     suspend fun updatePositionAfterLoop()
+    fun handleTimers()
     fun pauseGame()
     fun resumeGame()
     fun moveUp()
@@ -37,5 +39,6 @@ interface GameState {
     fun setGhostExitingCage(ghostExitingCageNow: Boolean)
     fun getMainGhostMain(): GhostMode
     fun getLastMainGhostMode(): GhostMode
+    fun getGamePlayMode(): GamePlayMode
 
 }

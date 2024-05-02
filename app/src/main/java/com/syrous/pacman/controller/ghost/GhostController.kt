@@ -4,16 +4,21 @@ import com.syrous.pacman.GameState
 import com.syrous.pacman.controller.ActorController
 import com.syrous.pacman.model.Actor
 import com.syrous.pacman.model.ActorUpdateInfo
+import com.syrous.pacman.model.Blinky
+import com.syrous.pacman.model.Clyde
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.GhostMode
+import com.syrous.pacman.model.Inky
 import com.syrous.pacman.model.MoveInCage
+import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.getOppositeDir
 import com.syrous.pacman.util.CAGE_ENTRANCE_TILE
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.getEuclideanDistanceBetween
 import com.syrous.pacman.util.plus
+import timber.log.Timber
 
 abstract class GhostController(
     private val gameState: GameState
@@ -22,12 +27,13 @@ abstract class GhostController(
     protected var followingRoutine: Boolean = true
     private var proceedToNextRoutine: Boolean = false
     private var routineMoveId = 0
-    private var reverseDirectionsNext = false
+    protected var reverseDirectionsNext = false
     protected var mode: GhostMode = GhostMode.NONE
     private var freeToExitCage = false
     private var eatenInFrightenedMode = false
     protected var scaleFactorX = 0
     protected var scaleFactorY = 0
+    protected var ghostModeChangedInCage = false
     private var targetPos: Pair<Float, Float> = Pair(0f, 0f)
     protected var scatterPos: Pair<Float, Float> = Pair(0f, 0f)
 
@@ -134,7 +140,11 @@ abstract class GhostController(
         }
     }
 
-    fun switchGhostMode(mode: GhostMode, actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    protected fun switchGhostMode(
+        mode: GhostMode,
+        actor: Actor,
+        updateActor: (ActorUpdateInfo) -> Unit
+    ) {
         val oldMode = this.mode
         this.mode = mode
         when (oldMode) {
@@ -200,6 +210,7 @@ abstract class GhostController(
         reversed: Boolean,
         updateGhost: (ActorUpdateInfo) -> Unit
     ) {
+        Timber.d("decideNextDir -> ghost -> $ghost")
         val currentTile = ghost.tilePos
         val dir = ghost.direction
         var nextDir = ghost.nextDir
@@ -207,12 +218,12 @@ abstract class GhostController(
             currentTile.first + dir.move.first.toInt(),
             currentTile.second + dir.move.second.toInt()
         )
-
+        Timber.d("inside decideNextDir !!, newTile -> $newTile, reveresed -> $reversed, target -> $targetPos")
         var destination = getPlayFieldTile(newTile)
         if (reversed && destination.isIntersection.not()) {
             destination = getPlayFieldTile(currentTile)
         }
-
+        Timber.d("inside decideNextDir!!, destination -> $destination")
         if (destination.isIntersection) {
             when (this.mode) {
                 GhostMode.PATROLLING,
@@ -277,6 +288,15 @@ abstract class GhostController(
 
     }
 
+    abstract fun setReverseDirectionNext(reversed: Boolean)
+
+    fun setModeChangedWhileInCage(change: Boolean) {
+        ghostModeChangedInCage = change
+    }
+
+    fun getGhostMode(): GhostMode = mode
+
+    abstract fun switchGhostMode(ghostMode: GhostMode)
     abstract fun updateTargetPos(pos: Pair<Float, Float>)
 
     abstract fun getMovesInCage(): List<MoveInCage>
@@ -293,7 +313,23 @@ abstract class GhostController(
                 val dir = actor.direction.getOppositeDir()
                 val nextDir = Directions.NONE
                 this.reverseDirectionsNext = false
-                decideNextDir(actor, reversed = true, updateActor)
+                updateActor(
+                    ActorUpdateInfo(
+                        position = actor.position,
+                        tilePos = actor.tilePos,
+                        lastGoodTilePos = actor.lastGoodTilePos,
+                        direction = dir,
+                        lastActiveDir = actor.lastActiveDir,
+                        nextDir = nextDir,
+                    )
+                )
+                val newActor = when (actor) {
+                    is Blinky -> actor.copy(direction = dir, nextDir = nextDir)
+                    is Clyde -> actor.copy(direction = dir, nextDir = nextDir)
+                    is Inky -> actor.copy(direction = dir, nextDir = nextDir)
+                    is Pinky -> actor.copy(direction = dir, nextDir = nextDir)
+                }
+                decideNextDir(newActor, reversed = true, updateActor)
             }
         }
     }

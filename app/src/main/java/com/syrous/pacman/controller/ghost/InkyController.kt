@@ -49,7 +49,7 @@ class InkyController(gameState: GameState) : GhostController(gameState) {
         this.playField = playField
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
-
+        scatterPos = Pair(27 * scaleFactorX.toFloat(), 30 * scaleFactorY.toFloat())
     }
     override fun updateTargetPos(pos: Pair<Float, Float>) {
         TODO("Not yet implemented")
@@ -131,6 +131,28 @@ class InkyController(gameState: GameState) : GhostController(gameState) {
                 }
             }
         }
+    }
+
+    override fun switchGhostMode(ghostMode: GhostMode) {
+        switchGhostMode(ghostMode, ghost.value) {
+                actorUpdateInfo ->
+            ghost.value = Inky(
+                position = actorUpdateInfo.position,
+                tilePos = actorUpdateInfo.tilePos,
+                screenPos = Pair(
+                    actorUpdateInfo.position.first * scaleFactorX,
+                    actorUpdateInfo.position.second * scaleFactorY
+                ),
+                lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
+                lastActiveDir = actorUpdateInfo.lastActiveDir,
+                direction = actorUpdateInfo.direction,
+                nextDir = actorUpdateInfo.nextDir
+            )
+        }
+    }
+
+    override fun setReverseDirectionNext(reversed: Boolean) {
+        reverseDirectionsNext = reversed
     }
 
 }

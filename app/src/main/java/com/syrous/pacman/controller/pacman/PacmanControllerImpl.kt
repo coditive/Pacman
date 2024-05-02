@@ -8,7 +8,6 @@ import com.syrous.pacman.model.GameInternalEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
-import com.syrous.pacman.model.toPacman
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.plus
@@ -57,13 +56,13 @@ class PacmanControllerImpl(
     }
 
     override fun move() {
-        if (requestedChangeDir != Directions.NONE) {
-            handleDirectionChange(requestedChangeDir)
-            requestedChangeDir = Directions.NONE
-        }
-        step(pacman.value) { actorUpdateInfo ->
-            pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
-        }
+//        if (requestedChangeDir != Directions.NONE) {
+//            handleDirectionChange(requestedChangeDir)
+//            requestedChangeDir = Directions.NONE
+//        }
+//        step(pacman.value) { actorUpdateInfo ->
+//            pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
+//        }
     }
 
     override fun moveLeft() {

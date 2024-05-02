@@ -48,6 +48,7 @@ class ClydeController(gameState: GameState) : GhostController(gameState) {
         this.playField = playField
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
+        scatterPos = Pair(1 * scaleFactorX.toFloat(), 30 * scaleFactorY.toFloat())
 
     }
 
@@ -128,6 +129,28 @@ class ClydeController(gameState: GameState) : GhostController(gameState) {
                 }
             }
         }
+    }
+
+    override fun switchGhostMode(ghostMode: GhostMode) {
+        switchGhostMode(ghostMode, ghost.value) {
+                actorUpdateInfo ->
+            ghost.value = Clyde(
+                position = actorUpdateInfo.position,
+                tilePos = actorUpdateInfo.tilePos,
+                screenPos = Pair(
+                    actorUpdateInfo.position.first * scaleFactorX,
+                    actorUpdateInfo.position.second * scaleFactorY
+                ),
+                lastGoodTilePos = actorUpdateInfo.lastGoodTilePos,
+                lastActiveDir = actorUpdateInfo.lastActiveDir,
+                direction = actorUpdateInfo.direction,
+                nextDir = actorUpdateInfo.nextDir
+            )
+        }
+    }
+
+    override fun setReverseDirectionNext(reversed: Boolean) {
+        reverseDirectionsNext = reversed
     }
 
 }

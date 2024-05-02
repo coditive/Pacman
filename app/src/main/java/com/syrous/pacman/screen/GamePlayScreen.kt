@@ -1,5 +1,6 @@
 package com.syrous.pacman.screen
 
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
@@ -81,13 +82,10 @@ class GamePlay(
     @Composable
     fun Screen(modifier: Modifier = Modifier) {
         Initialize()
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            topBar = {
-                val score = gameState.score.collectAsState().value
-                Text(text = "Your Score: $score", fontFamily = PressStartFontFamily)
-            }
-        ) { paddingValues ->
+        Scaffold(modifier = modifier.fillMaxSize(), topBar = {
+            val score = gameState.score.collectAsState().value
+            Text(text = "Your Score: $score", fontFamily = PressStartFontFamily)
+        }) { paddingValues ->
 
             val isPause = gameState.isPaused.collectAsState().value
             PacmanPlayer(
@@ -155,24 +153,22 @@ class GamePlay(
         val inky = gameState.inky.collectAsState().value
         val clyde = gameState.clyde.collectAsState().value
 
+        Log.d("GamePlayScreen", "blinky -> $blinky")
+
         val animatableCutAngle = remember {
             Animatable(CutAngle)
         }
 
         LaunchedEffect(key1 = pacman) {
-            animatableCutAngle.animateTo(
-                targetValue = CutAngle,
-                animationSpec = keyframes {
-                    CutAngle at 0 using LinearEasing
-                    EatAngle at 80 using LinearEasing
-                    0f at 100 using LinearEasing
-                    CutAngle at 195
-                }
-            )
+            animatableCutAngle.animateTo(targetValue = CutAngle, animationSpec = keyframes {
+                CutAngle at 0 using LinearEasing
+                EatAngle at 80 using LinearEasing
+                0f at 100 using LinearEasing
+                CutAngle at 195
+            })
         }
 
-        Canvas(modifier = modifier
-            .onGloballyPositioned { coordinates ->
+        Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
                 gameState.updateScreenDimensions(
                     coordinates.size.width, coordinates.size.height
                 )
@@ -212,8 +208,7 @@ class GamePlay(
                     color = foodColor!!,
                     radius = if (foodList[x]!![y]!! == Food.PELLET) FoodRadius.dp.toPx() else if (foodList[x]!![y]!! == Food.ENERGIZER) EnergizerRadius.dp.toPx() else 0f,
                     center = Offset(
-                        x.toFloat(),
-                        y.toFloat()
+                        x.toFloat(), y.toFloat()
                     )
                 )
             }
@@ -221,29 +216,31 @@ class GamePlay(
     }
 
     private fun DrawScope.drawGhost(ghost: Ghost, ghostImage: ImageBitmap) {
-        drawImage(
-            image = ghostImage,
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(ghostImage.width, ghostImage.height),
-            dstOffset = IntOffset(
-                ghost.position.first.toInt(),
-                ghost.position.second.toInt()
-            ),
-            dstSize = IntSize(GhostSize, GhostSize),
-        )
+        rotate(
+            degrees = 0f,
+            pivot = Offset(
+                ghost.screenPos.first, ghost.screenPos.second
+            )
+        ) {
+            drawImage(
+                image = ghostImage,
+                srcOffset = IntOffset.Zero,
+                srcSize = IntSize(ghostImage.width, ghostImage.height),
+                dstOffset = IntOffset(
+                    ghost.screenPos.first.toInt() - GhostSize / 2,
+                    ghost.screenPos.second.toInt() - GhostSize / 2
+                ),
+                dstSize = IntSize(GhostSize, GhostSize),
+            )
+        }
     }
 
     private fun DrawScope.drawCircleWithCutout(
-        color: Color,
-        radius: Float,
-        animatedCutAngle: Float,
-        pacman: Pacman
+        color: Color, radius: Float, animatedCutAngle: Float, pacman: Pacman
     ) {
         rotate(
-            degrees = pacman.lastActiveDir.angle,
-            pivot = Offset(
-                pacman.screenPos.first,
-                pacman.screenPos.second
+            degrees = pacman.lastActiveDir.angle, pivot = Offset(
+                pacman.screenPos.first, pacman.screenPos.second
             )
         ) {
             drawArc(
@@ -251,8 +248,7 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.screenPos.first - radius,
-                    pacman.screenPos.second - radius
+                    pacman.screenPos.first - radius, pacman.screenPos.second - radius
                 ),
                 size = Size(radius * 2, radius * 2),
                 useCenter = true,
@@ -316,8 +312,7 @@ class GamePlay(
                         if (pauseState) {
                             performAction(GamePlayScreenAction.ResumeGame)
                         } else performAction(GamePlayScreenAction.PauseGame)
-                    },
-                    colors = GameControlActionButtonScheme
+                    }, colors = GameControlActionButtonScheme
                 ) {
                     val string = if (pauseState) "Resume Game" else "Pause Game"
                     Text(text = string)
