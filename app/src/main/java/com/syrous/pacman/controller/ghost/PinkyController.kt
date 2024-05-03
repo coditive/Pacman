@@ -76,12 +76,12 @@ class PinkyController(gameState: GameState) : GhostController(gameState) {
                     }
                 }
             } else {
-                step(ghost.value) { actorUpdateInfo ->
+                step { actorUpdateInfo ->
                     ghost.value = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
                     actor = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.EATEN) {
-                    step(ghost.value) { actorUpdateInfo ->
+                    step { actorUpdateInfo ->
                         ghost.value = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
                         actor = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
                     }

@@ -48,7 +48,7 @@ class GameStateImpl : GameState {
     private var gamePlayMode: GamePlayMode = GamePlayMode.NEWGAME_STARTING
 
     private val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
-    private val pacmanController: PacmanController = PacmanControllerImpl { gameInternalEvent ->
+    private val pacmanController: PacmanController = PacmanControllerImpl(this) { gameInternalEvent ->
         when (gameInternalEvent) {
             is PacmanAteFood -> haveFood(gameInternalEvent.playFieldTile)
         }
@@ -234,6 +234,7 @@ class GameStateImpl : GameState {
         createFood()
         initializePacman()
         initializeGhosts()
+        changeGamePlayMode(GamePlayMode.NEWGAME_STARTED)
     }
 
     private fun initializeGhosts() {
@@ -360,7 +361,6 @@ class GameStateImpl : GameState {
             GamePlayMode.PLAYER_DYING -> {}
             GamePlayMode.PLAYER_DIED -> {}
             GamePlayMode.NEWGAME_STARTING -> {
-                changeGamePlayMode(GamePlayMode.NEWGAME_STARTED)
             }
 
             GamePlayMode.NEWGAME_STARTED, GamePlayMode.GAME_RESTARTED -> {

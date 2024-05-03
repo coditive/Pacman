@@ -298,11 +298,23 @@ abstract class GhostController(
                 val dir = actor.direction.getOppositeDir()
                 val nextDir = Directions.NONE
                 this.reverseDirectionsNext = false
-                val newActor = when (actor) {
-                    is Blinky -> actor.copy(direction = dir, nextDir = nextDir)
-                    is Clyde -> actor.copy(direction = dir, nextDir = nextDir)
-                    is Inky -> actor.copy(direction = dir, nextDir = nextDir)
-                    is Pinky -> actor.copy(direction = dir, nextDir = nextDir)
+               val newActor = when (actor) {
+                    is Blinky -> {
+                        this.actor = actor.copy(direction = dir, nextDir = nextDir)
+                        actor.copy(direction = dir, nextDir = nextDir)
+                    }
+                    is Clyde -> {
+                        this.actor = actor.copy(direction = dir, nextDir = nextDir)
+                        actor.copy(direction = dir, nextDir = nextDir)
+                    }
+                    is Inky -> {
+                        this.actor = actor.copy(direction = dir, nextDir = nextDir)
+                        actor.copy(direction = dir, nextDir = nextDir)
+                    }
+                    is Pinky -> {
+                        this.actor = actor.copy(direction = dir, nextDir = nextDir)
+                        actor.copy(direction = dir, nextDir = nextDir)
+                    }
                 }
                 decideNextDir(newActor, reversed = true)
             }

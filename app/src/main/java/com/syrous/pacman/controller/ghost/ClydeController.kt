@@ -77,12 +77,12 @@ class ClydeController(gameState: GameState) : GhostController(gameState) {
                     }
                 }
             } else {
-                step(ghost.value) { actorUpdateInfo ->
+                step { actorUpdateInfo ->
                     ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
                     actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.EATEN) {
-                    step(ghost.value) { actorUpdateInfo ->
+                    step { actorUpdateInfo ->
                         ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
                         actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
                     }

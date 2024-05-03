@@ -88,12 +88,12 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
                     }
                 }
             } else {
-                step(ghost.value) { actorUpdateInfo ->
+                step { actorUpdateInfo ->
                     ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                     actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.EATEN) {
-                    step(ghost.value) { actorUpdateInfo ->
+                    step { actorUpdateInfo ->
                         ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                         actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                     }

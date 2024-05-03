@@ -1,10 +1,12 @@
 package com.syrous.pacman.controller.pacman
 
+import com.syrous.pacman.GameState
 import com.syrous.pacman.controller.ActorController
 import com.syrous.pacman.model.Actor
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GameInternalEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toPacman
@@ -15,8 +17,10 @@ import com.syrous.pacman.util.times
 import com.syrous.pacman.util.toFloat
 import com.syrous.pacman.util.toGamePos
 import kotlinx.coroutines.flow.MutableStateFlow
+import timber.log.Timber
 
 class PacmanControllerImpl(
+    private val gameState: GameState,
     private val gameEventCallback: (GameInternalEvent) -> Unit
 ) : ActorController(), PacmanController {
 
@@ -40,7 +44,7 @@ class PacmanControllerImpl(
         this.playField = playField
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
-        this.actor = Pacman(
+        actor = Pacman(
             position = Pair(14f * UnitScale, 24f * UnitScale),
             tilePos = Pair(14, 24),
             screenPos = Pair(14f * scaleFactorX, 24f * scaleFactorY),
@@ -65,14 +69,16 @@ class PacmanControllerImpl(
     }
 
     override fun move() {
-        if (requestedChangeDir != Directions.NONE) {
-            handleDirectionChange(requestedChangeDir)
-            requestedChangeDir = Directions.NONE
-        }
-        step(pacman.value) { actorUpdateInfo ->
-            pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
-            actor = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
-        }
+       if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
+           if (requestedChangeDir != Directions.NONE) {
+               handleDirectionChange(requestedChangeDir)
+               requestedChangeDir = Directions.NONE
+           }
+           step { actorUpdateInfo ->
+               pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
+               actor = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
+           }
+       }
     }
 
     override fun moveLeft() {
@@ -124,25 +130,27 @@ class PacmanControllerImpl(
     }
 
     private fun handleDirectionChange(inputDir: Directions) {
-        var dir = pacman.value.direction
-        val tilePos = pacman.value.tilePos
-        var lastActiveDir = pacman.value.lastActiveDir
+        Timber.d("inputDir => $inputDir")
+        var dir = actor.direction
+        val tilePos = actor.tilePos
+        var lastActiveDir = actor.lastActiveDir
         if (dir == getOppositeDirection(inputDir)) {
             dir = inputDir
             if (dir != Directions.NONE) {
                 lastActiveDir = dir
             }
-            pacman.value = pacman.value.copy(
+            actor = pacman.value.copy(
                 direction = dir,
                 nextDir = Directions.NONE,
                 lastActiveDir = lastActiveDir
             )
+            Timber.d("Pacman value after update => ${pacman.value}")
         } else if (dir != inputDir) {
             val playFieldTile = getPlayFieldTile(tilePos)
             if (dir == Directions.NONE) {
                 if (playFieldTile.allowedDir.contains(inputDir)) {
                     dir = inputDir
-                    pacman.value = pacman.value.copy(direction = dir, lastActiveDir = dir)
+                    actor = pacman.value.copy(direction = dir, lastActiveDir = dir)
                 }
             } else {
                 if (playFieldTile.allowedDir.contains(inputDir)) {
@@ -165,7 +173,7 @@ class PacmanControllerImpl(
                         dir = inputDir
                         val pastTile = pacman.value.tilePos
                         val newPos = pastTile.toFloat() + dir.move * stepPassed
-                        pacman.value = pacman.value.copy(
+                        actor = pacman.value.copy(
                             position = Pair(
                                 newPos.first * UnitScale,
                                 newPos.second * UnitScale
@@ -180,7 +188,7 @@ class PacmanControllerImpl(
                         return
                     }
                 }
-                pacman.value = pacman.value.copy(nextDir = inputDir)
+                actor = pacman.value.copy(nextDir = inputDir)
             }
         }
     }

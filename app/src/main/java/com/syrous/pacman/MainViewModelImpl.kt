@@ -3,6 +3,7 @@ package com.syrous.pacman
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.syrous.pacman.controller.GameController
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.navigation.GameScreen
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -97,7 +98,9 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         lastTime = now
 
         for (i in 0 until tickMultiplier + latency) {
-            gameState.updatePositionAfterLoop()
+            if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
+                gameState.updatePositionAfterLoop()
+            }
             gameState.handleTimers()
         }
     }

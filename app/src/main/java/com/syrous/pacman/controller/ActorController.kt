@@ -6,6 +6,7 @@ import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.UnitScale
+import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
@@ -35,7 +36,7 @@ abstract class ActorController {
     fun getPlayFieldTilePos(tile: Pair<Int, Int>): Pair<Int, Int> =
         Pair(tile.first * UnitScale, tile.second * UnitScale)
 
-    fun step(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    fun step(updateActor: (ActorUpdateInfo) -> Unit) {
         val pos = actor.position
         val dir = actor.direction
         val tilePos = actor.tilePos
@@ -43,7 +44,7 @@ abstract class ActorController {
         val pacX = pos.first + dir.move.first
         val pacY = pos.second + dir.move.second
         val newPos = Pair(pacX, pacY)
-
+        Timber.d("actor before position increment => $actor, then this.actor => ${this.actor}, and newPos => $newPos")
         updateActor(
             ActorUpdateInfo(
                 position = newPos,
@@ -109,6 +110,8 @@ abstract class ActorController {
 
         decideNextDirAfterEnteredTile(actor)
 
+        Timber.d("actor after deciding next tile -> $actor")
+
         var actorUpdateInfo = ActorUpdateInfo(
             position = actor.position,
             tilePos = actor.tilePos,
@@ -125,6 +128,7 @@ abstract class ActorController {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actor.direction)
                 }
+                Timber.d("inside nextDir != None, contains(nextDir) => before updateActor => $actorUpdateInfo")
                 updateActor(
                     actorUpdateInfo.copy(
                         direction = actorUpdateInfo.nextDir,
@@ -136,6 +140,7 @@ abstract class ActorController {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
                 }
+                Timber.d("inside direction is not allowed -> ${actor.direction}, tile =>$playFieldTile => before updateActor => $actorUpdateInfo")
                 updateActor(
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)
                 )

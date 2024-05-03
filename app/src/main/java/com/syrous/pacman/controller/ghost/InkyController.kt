@@ -76,12 +76,12 @@ class InkyController(gameState: GameState) : GhostController(gameState) {
                     }
                 }
             } else {
-                step(ghost.value) { actorUpdateInfo ->
+                step { actorUpdateInfo ->
                     ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                     actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.EATEN) {
-                    step(ghost.value) { actorUpdateInfo ->
+                    step { actorUpdateInfo ->
                         ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                         actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
                     }
