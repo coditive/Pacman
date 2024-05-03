@@ -39,7 +39,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.syrous.pacman.PacmanState
+import com.syrous.pacman.GameState
 import com.syrous.pacman.R
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
@@ -64,7 +64,7 @@ sealed class GamePlayScreenAction {
 
 class GamePlay(
     private val ghostImageList: List<ImageBitmap>,
-    private val gameState: PacmanState,
+    private val gameState: GameState,
     private val performAction: (GamePlayScreenAction) -> Unit
 ) {
 
@@ -77,19 +77,15 @@ class GamePlay(
         pacmanColor = MaterialTheme.colorScheme.primary
         wallColor = MaterialTheme.colorScheme.onSurface
         foodColor = MaterialTheme.colorScheme.secondary
-        Log.d("GamePlayScreen", "Initialize called!!")
     }
 
     @Composable
     fun Screen(modifier: Modifier = Modifier) {
         Initialize()
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            topBar = {
-                val score = gameState.score.collectAsState().value
-                Text(text = "Your Score: $score", fontFamily = PressStartFontFamily)
-            }
-        ) { paddingValues ->
+        Scaffold(modifier = modifier.fillMaxSize(), topBar = {
+            val score = gameState.score.collectAsState().value
+            Text(text = "Your Score: $score", fontFamily = PressStartFontFamily)
+        }) { paddingValues ->
 
             val isPause = gameState.isPaused.collectAsState().value
             PacmanPlayer(
@@ -114,7 +110,6 @@ class GamePlay(
     @Composable
     fun PacmanPlayer(modifier: Modifier = Modifier) {
         Box(modifier = modifier) {
-            Log.d("GamePlayScreen", "PacmanPlayerBox called!!!")
             PacmanGameWalls(modifier = Modifier.fillMaxSize())
             PacmanScreenLayout(modifier = Modifier.fillMaxSize())
             PacmanActorComposable(modifier = Modifier.fillMaxSize())
@@ -125,7 +120,6 @@ class GamePlay(
     private fun PacmanGameWalls(modifier: Modifier = Modifier) {
         val vGameWalls = gameState.vWallList.collectAsState().value
         val hGameWalls = gameState.hWallList.collectAsState().value
-        Log.d("GamePlayScreen", "PacmanGameWall before canvas called!!!")
         Canvas(modifier = modifier) {
             for (wall in vGameWalls.keys) {
                 val (x1, y1) = wall
@@ -154,26 +148,27 @@ class GamePlay(
     @Composable
     private fun PacmanActorComposable(modifier: Modifier = Modifier) {
         val pacman = gameState.pacman.collectAsState().value
-        val ghosts = gameState.ghosts.collectAsState().value
+        val blinky = gameState.blinky.collectAsState().value
+        val pinky = gameState.pinky.collectAsState().value
+        val inky = gameState.inky.collectAsState().value
+        val clyde = gameState.clyde.collectAsState().value
+
+        Log.d("GamePlayScreen", "blinky -> $blinky")
 
         val animatableCutAngle = remember {
             Animatable(CutAngle)
         }
 
         LaunchedEffect(key1 = pacman) {
-            animatableCutAngle.animateTo(
-                targetValue = CutAngle,
-                animationSpec = keyframes {
-                    CutAngle at 0 using LinearEasing
-                    EatAngle at 80 using LinearEasing
-                    0f at 100 using LinearEasing
-                    CutAngle at 195
-                }
-            )
+            animatableCutAngle.animateTo(targetValue = CutAngle, animationSpec = keyframes {
+                CutAngle at 0 using LinearEasing
+                EatAngle at 80 using LinearEasing
+                0f at 100 using LinearEasing
+                CutAngle at 195
+            })
         }
 
-        Canvas(modifier = modifier
-            .onGloballyPositioned { coordinates ->
+        Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
                 gameState.updateScreenDimensions(
                     coordinates.size.width, coordinates.size.height
                 )
@@ -185,9 +180,10 @@ class GamePlay(
                 pacman = pacman
             )
 
-            for (ghost in ghosts) {
-                drawGhost(ghost, ghostImageList)
-            }
+            drawGhost(blinky, ghostImageList[0])
+            drawGhost(pinky, ghostImageList[1])
+            drawGhost(inky, ghostImageList[2])
+            drawGhost(clyde, ghostImageList[3])
         }
     }
 
@@ -212,39 +208,39 @@ class GamePlay(
                     color = foodColor!!,
                     radius = if (foodList[x]!![y]!! == Food.PELLET) FoodRadius.dp.toPx() else if (foodList[x]!![y]!! == Food.ENERGIZER) EnergizerRadius.dp.toPx() else 0f,
                     center = Offset(
-                        x.toFloat(),
-                        y.toFloat()
+                        x.toFloat(), y.toFloat()
                     )
                 )
             }
         }
     }
 
-    private fun DrawScope.drawGhost(ghost: Ghost, ghostImageList: List<ImageBitmap>) {
-        drawImage(
-            image = ghostImageList[ghost.id],
-            srcOffset = IntOffset.Zero,
-            srcSize = IntSize(ghostImageList[ghost.id].width, ghostImageList[ghost.id].height),
-            dstOffset = IntOffset(
-                ghost.position.first.toInt(),
-                ghost.position.second.toInt()
-            ),
-            dstSize = IntSize(GhostSize, GhostSize),
-        )
+    private fun DrawScope.drawGhost(ghost: Ghost, ghostImage: ImageBitmap) {
+        rotate(
+            degrees = 0f,
+            pivot = Offset(
+                ghost.screenPos.first, ghost.screenPos.second
+            )
+        ) {
+            drawImage(
+                image = ghostImage,
+                srcOffset = IntOffset.Zero,
+                srcSize = IntSize(ghostImage.width, ghostImage.height),
+                dstOffset = IntOffset(
+                    ghost.screenPos.first.toInt() - GhostSize / 2,
+                    ghost.screenPos.second.toInt() - GhostSize / 2
+                ),
+                dstSize = IntSize(GhostSize, GhostSize),
+            )
+        }
     }
 
     private fun DrawScope.drawCircleWithCutout(
-        color: Color,
-        radius: Float,
-        animatedCutAngle: Float,
-        pacman: Pacman
+        color: Color, radius: Float, animatedCutAngle: Float, pacman: Pacman
     ) {
-        Log.d("GamePlayScreen","pacman position -> $pacman")
         rotate(
-            degrees = pacman.lastActiveDir.angle,
-            pivot = Offset(
-                pacman.screenPos.first,
-                pacman.screenPos.second
+            degrees = pacman.lastActiveDir.angle, pivot = Offset(
+                pacman.screenPos.first, pacman.screenPos.second
             )
         ) {
             drawArc(
@@ -252,8 +248,7 @@ class GamePlay(
                 startAngle = animatedCutAngle,
                 sweepAngle = 360f - 2 * animatedCutAngle,
                 topLeft = Offset(
-                    pacman.screenPos.first - radius,
-                    pacman.screenPos.second - radius
+                    pacman.screenPos.first - radius, pacman.screenPos.second - radius
                 ),
                 size = Size(radius * 2, radius * 2),
                 useCenter = true,
@@ -317,8 +312,7 @@ class GamePlay(
                         if (pauseState) {
                             performAction(GamePlayScreenAction.ResumeGame)
                         } else performAction(GamePlayScreenAction.PauseGame)
-                    },
-                    colors = GameControlActionButtonScheme
+                    }, colors = GameControlActionButtonScheme
                 ) {
                     val string = if (pauseState) "Resume Game" else "Pause Game"
                     Text(text = string)

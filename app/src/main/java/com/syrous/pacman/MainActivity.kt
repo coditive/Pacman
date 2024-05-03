@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.lifecycleScope
 import com.syrous.pacman.controller.GameController
+import com.syrous.pacman.model.GameEvent
 import com.syrous.pacman.navigation.GameScreen
 import com.syrous.pacman.screen.GameOver
 import com.syrous.pacman.screen.GamePlay
@@ -42,10 +43,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         ghostImageList = buildList {
-            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_red).asImageBitmap())
-            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_orange).asImageBitmap())
-            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_red).asImageBitmap())
-            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_red).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_blinky).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_pinky).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_inky).asImageBitmap())
+            add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_clyde).asImageBitmap())
         }
 
 

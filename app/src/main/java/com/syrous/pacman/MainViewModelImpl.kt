@@ -1,6 +1,5 @@
 package com.syrous.pacman
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.syrous.pacman.controller.GameController
@@ -18,7 +17,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     override val currentScreen: MutableStateFlow<GameScreen> =
         MutableStateFlow(GameScreen.START_SCREEN)
 
-    override var gameState: PacmanState = PacmanStateImpl()
+    override var gameState: GameState = GameStateImpl()
     private var isPaused: Boolean = true
     private var isStarted: Boolean = false
     private var gameLoop: Job? = null
@@ -58,7 +57,6 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
             gameLoop = viewModelScope.launch {
                 while (true) {
                     gameLoop()
-                    Log.d("MainViewModelImpl", "tickInterval -> $tickInterval")
                     delay(round(tickInterval).toLong())
                 }
             }
@@ -100,6 +98,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
 
         for (i in 0 until tickMultiplier + latency) {
             gameState.updatePositionAfterLoop()
+            gameState.handleTimers()
         }
     }
 
