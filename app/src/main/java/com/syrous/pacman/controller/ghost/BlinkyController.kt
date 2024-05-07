@@ -67,8 +67,16 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         )
     }
 
-    override fun updateTargetPos(pos: Pair<Float, Float>) {
-        TODO("Not yet implemented")
+    override fun updateTargetPos() {
+        val pacman = gameState.pacman.value
+        when {
+            mode == GhostMode.CHASING -> {
+                targetPos = Pair(
+                    pacman.tilePos.first * UnitScale.toFloat(),
+                    pacman.tilePos.second * UnitScale.toFloat()
+                )
+            }
+        }
     }
 
     override fun getMovesInCage(): List<MoveInCage> {

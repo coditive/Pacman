@@ -2,11 +2,15 @@ package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
 import com.syrous.pacman.model.Directions
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.Inky
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.model.toInky
 import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.minus
+import com.syrous.pacman.util.plus
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class InkyController(private val gameState: GameState) : GhostController(gameState) {
@@ -67,20 +71,38 @@ class InkyController(private val gameState: GameState) : GhostController(gameSta
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
         )
-//        ghost.value = Inky(
-//            position = Pair(14 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
-//            tilePos = Pair(14, 15),
-//            lastGoodTilePos = Pair(14, 15),
-//            screenPos = Pair(14f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
-//            lastActiveDir = Directions.RIGHT,
-//            direction = Directions.RIGHT,
-//            nextDir = Directions.NONE,
-//        )
+        ghost.value = Inky(
+            position = Pair(14 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
+            tilePos = Pair(14, 15),
+            lastGoodTilePos = Pair(14, 15),
+            screenPos = Pair(14f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.NONE,
+        )
 
     }
 
-    override fun updateTargetPos(pos: Pair<Float, Float>) {
-        TODO("Not yet implemented")
+    override fun updateTargetPos() {
+        if (this.mode != GhostMode.CHASING) {
+            return
+        }
+        // the player are attacked on both sides by Inky and Blinky
+        val pacman = gameState.pacman.value
+        val pacmanMove = pacman.direction.move
+        val blinky = gameState.blinky.value
+        var pacmanDest = Pair(
+            pacman.tilePos.first * UnitScale.toFloat(),
+            pacman.tilePos.second * UnitScale.toFloat()
+        )
+        pacmanDest += Pair(16 * pacmanMove.first, 16 * pacmanMove.second)
+        if (pacman.direction == Directions.UP) {
+            pacmanDest -= Pair(0f, 16f)
+        }
+        targetPos = Pair(
+            pacmanDest.first * 2 - blinky.tilePos.first,
+            pacmanDest.second * 2 - blinky.tilePos.second
+        )
     }
 
     override fun getMovesInCage(): List<MoveInCage> {
@@ -90,31 +112,31 @@ class InkyController(private val gameState: GameState) : GhostController(gameSta
     }
 
     override fun move() {
-//        if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
-//            if (followingRoutine) {
-//                followRoutine { actorUpdateInfo ->
-//                    ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                    actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                }
-//                if (mode == GhostMode.ENTERING_CAGE) {
-//                    followRoutine { actorUpdateInfo ->
-//                        ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                        actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                    }
-//                }
-//            } else {
-//                step { actorUpdateInfo ->
-//                    ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                    actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                }
-//                if (mode == GhostMode.EATEN) {
-//                    step { actorUpdateInfo ->
-//                        ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                        actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
-//                    }
-//                }
-//            }
-//        }
+        if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
+            if (followingRoutine) {
+                followRoutine { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                }
+                if (mode == GhostMode.ENTERING_CAGE) {
+                    followRoutine { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                    }
+                }
+            } else {
+                step { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                }
+                if (mode == GhostMode.EATEN) {
+                    step { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toInky(scaleFactorX, scaleFactorY)
+                    }
+                }
+            }
+        }
     }
 
     override fun setReverseDirectionNext(reversed: Boolean) {

@@ -16,9 +16,8 @@ import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.getOppositeDir
 import com.syrous.pacman.util.CAGE_ENTRANCE_TILE
 import com.syrous.pacman.util.UnitScale
-import com.syrous.pacman.util.getEuclideanDistanceBetween
+import com.syrous.pacman.util.getEuclideanDistanceBetweenFloat
 import com.syrous.pacman.util.plus
-import timber.log.Timber
 
 abstract class GhostController(
     private val gameState: GameState
@@ -34,7 +33,7 @@ abstract class GhostController(
     protected var scaleFactorX = 0
     protected var scaleFactorY = 0
     protected var ghostModeChangedInCage = false
-    private var targetPos: Pair<Float, Float> = Pair(0f, 0f)
+    protected var targetPos: Pair<Float, Float> = Pair(0f, 0f)
     protected var scatterPos: Pair<Float, Float> = Pair(0f, 0f)
 
     abstract fun init(playField: Map<Int, Map<Int, Tile>>, scaleFactorX: Int, scaleFactorY: Int)
@@ -84,7 +83,6 @@ abstract class GhostController(
             val ghostY = move.y * UnitScale
             val dir = move.direction
             proceedToNextRoutine = false
-            Timber.d("ghostX -> $ghostX, ghostY -> $ghostY, dir -> $dir")
             updateActor(
                 ActorUpdateInfo(
                     position = Pair(ghostX, ghostY),
@@ -240,7 +238,7 @@ abstract class GhostController(
                             if (dir != d.getOppositeDir()) {
                                 val newTileCandidate = ghost.position + d.move
                                 val distance =
-                                    getEuclideanDistanceBetween(newTileCandidate, targetPos)
+                                    getEuclideanDistanceBetweenFloat(newTileCandidate, targetPos)
                                 if (minDist > distance) {
                                     preferredDir = d
                                     minDist = distance
@@ -291,7 +289,7 @@ abstract class GhostController(
 
     fun getGhostMode(): GhostMode = mode
 
-    abstract fun updateTargetPos(pos: Pair<Float, Float>)
+    abstract fun updateTargetPos()
 
     abstract fun getMovesInCage(): List<MoveInCage>
 

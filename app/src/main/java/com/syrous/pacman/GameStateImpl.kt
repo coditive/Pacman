@@ -351,6 +351,12 @@ class GameStateImpl : GameState {
         }
     }
 
+    override fun updateTargetPosAfterLoop() {
+        for(ghost in ghostControllerList) {
+            ghost.updateTargetPos()
+        }
+    }
+
     override fun handleTimers() {
         handleGamePlayModeTimer()
     }

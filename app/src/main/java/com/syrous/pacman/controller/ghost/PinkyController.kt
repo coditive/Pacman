@@ -9,6 +9,8 @@ import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toPinky
 import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.minus
+import com.syrous.pacman.util.plus
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class PinkyController(private val gameState: GameState) : GhostController(gameState) {
@@ -78,13 +80,21 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
         )
     }
 
-    override fun updateTargetPos(pos: Pair<Float, Float>) {
-        TODO("Not yet implemented")
+    override fun updateTargetPos() {
+        if (mode != GhostMode.CHASING) {
+            return
+        }
+        val pacman = gameState.pacman.value
+        targetPos = Pair(
+            pacman.tilePos.first.toFloat() * UnitScale, pacman.tilePos.second.toFloat() * UnitScale
+        ) + Pair(32 * pacman.direction.move.first, 32 * pacman.direction.move.second)
+        if (pacman.direction == Directions.UP) {
+            targetPos -= Pair(0f, 32f)
+        }
     }
 
     override fun getMovesInCage(): List<MoveInCage> {
-        return if (MOVES_IN_CAGE.containsKey(mode))
-            MOVES_IN_CAGE[mode]!!
+        return if (MOVES_IN_CAGE.containsKey(mode)) MOVES_IN_CAGE[mode]!!
         else emptyList()
     }
 

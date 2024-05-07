@@ -28,6 +28,7 @@ interface GameState {
 
     fun updateScreenDimensions(width: Int, height: Int)
     suspend fun updatePositionAfterLoop()
+    fun updateTargetPosAfterLoop()
     fun handleTimers()
     fun pauseGame()
     fun resumeGame()

@@ -100,6 +100,11 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         for (i in 0 until tickMultiplier + latency) {
             if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
                 gameState.updatePositionAfterLoop()
+
+                if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
+                    gameState.updateTargetPosAfterLoop()
+                }
+
             }
             gameState.handleTimers()
         }

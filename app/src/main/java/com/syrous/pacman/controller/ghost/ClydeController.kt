@@ -3,9 +3,13 @@ package com.syrous.pacman.controller.ghost
 import com.syrous.pacman.GameState
 import com.syrous.pacman.model.Clyde
 import com.syrous.pacman.model.Directions
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.model.toClyde
+import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.getEuclideanDistanceBetweenInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import timber.log.Timber
 
@@ -56,28 +60,35 @@ class ClydeController(private val gameState: GameState) : GhostController(gameSt
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
         scatterPos = Pair(1 * scaleFactorX.toFloat(), 30 * scaleFactorY.toFloat())
-//        actor = Clyde(
-//            position = Pair(16 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
-//            tilePos = Pair(16, 15),
-//            lastGoodTilePos = Pair(16, 15),
-//            screenPos = Pair(16f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
-//            lastActiveDir = Directions.RIGHT,
-//            direction = Directions.RIGHT,
-//            nextDir = Directions.NONE,
-//        )
-//        ghost.value = Clyde(
-//            position = Pair(16 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
-//            tilePos = Pair(16, 15),
-//            lastGoodTilePos = Pair(16, 15),
-//            screenPos = Pair(16f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
-//            lastActiveDir = Directions.RIGHT,
-//            direction = Directions.RIGHT,
-//            nextDir = Directions.NONE,
-//        )
+        actor = Clyde(
+            position = Pair(16 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
+            tilePos = Pair(16, 15),
+            lastGoodTilePos = Pair(16, 15),
+            screenPos = Pair(16f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.NONE,
+        )
+        ghost.value = Clyde(
+            position = Pair(16 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
+            tilePos = Pair(16, 15),
+            lastGoodTilePos = Pair(16, 15),
+            screenPos = Pair(16f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.NONE,
+        )
     }
 
-    override fun updateTargetPos(pos: Pair<Float, Float>) {
-        TODO("Not yet implemented")
+    override fun updateTargetPos() {
+        val pacman = gameState.pacman.value
+        val distance = getEuclideanDistanceBetweenInt(pacman.tilePos, gameState.clyde.value.tilePos)
+        this.targetPos =
+            if (distance > 64f) Pair(
+                pacman.tilePos.first * UnitScale.toFloat(),
+                pacman.tilePos.second * UnitScale.toFloat()
+            )
+            else this.scatterPos
     }
 
     override fun getMovesInCage(): List<MoveInCage> {
@@ -87,31 +98,31 @@ class ClydeController(private val gameState: GameState) : GhostController(gameSt
     }
 
     override fun move() {
-//        if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
-//            if (followingRoutine) {
-//                followRoutine { actorUpdateInfo ->
-//                    ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                    actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                }
-//                if (mode == GhostMode.ENTERING_CAGE) {
-//                    followRoutine { actorUpdateInfo ->
-//                        ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                        actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                    }
-//                }
-//            } else {
-//                step { actorUpdateInfo ->
-//                    ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                    actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                }
-//                if (mode == GhostMode.EATEN) {
-//                    step { actorUpdateInfo ->
-//                        ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                        actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-//                    }
-//                }
-//            }
-//        }
+        if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
+            if (followingRoutine) {
+                followRoutine { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                }
+                if (mode == GhostMode.ENTERING_CAGE) {
+                    followRoutine { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                    }
+                }
+            } else {
+                step { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                    actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                }
+                if (mode == GhostMode.EATEN) {
+                    step { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                        actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                    }
+                }
+            }
+        }
     }
 
     override fun setReverseDirectionNext(reversed: Boolean) {
