@@ -10,6 +10,7 @@ import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toBlinky
 import com.syrous.pacman.util.UnitScale
 import kotlinx.coroutines.flow.MutableStateFlow
+import timber.log.Timber
 
 class BlinkyController(private val gameState: GameState) : GhostController(gameState) {
 
@@ -45,11 +46,12 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
         scatterPos = Pair(1 * UnitScale.toFloat(), 1 * UnitScale.toFloat())
+        Timber.d("scaleFactorX => $scaleFactorX, scaleFactorY => $scaleFactorY")
         actor = Blinky(
             position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
             tilePos = Pair(15, 12),
             lastGoodTilePos = Pair(15, 12),
-            screenPos = Pair(15f * scaleFactorX, 12f * scaleFactorY),
+            screenPos = Pair(15f * UnitScale, 12f * UnitScale),
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
@@ -58,7 +60,7 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
             position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
             tilePos = Pair(15, 12),
             lastGoodTilePos = Pair(15, 12),
-            screenPos = Pair(15f * scaleFactorX, 12f * scaleFactorY),
+            screenPos = Pair(15f * UnitScale, 12f * UnitScale),
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
@@ -77,12 +79,12 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
     override fun move() {
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
-                followRoutine(ghost.value) { actorUpdateInfo ->
+                followRoutine { actorUpdateInfo ->
                     ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                     actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                 }
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine(ghost.value) { actorUpdateInfo ->
+                    followRoutine { actorUpdateInfo ->
                         ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                         actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
                     }

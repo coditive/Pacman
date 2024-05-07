@@ -153,7 +153,7 @@ class GamePlay(
         val inky = gameState.inky.collectAsState().value
         val clyde = gameState.clyde.collectAsState().value
 
-        Log.d("GamePlayScreen", "blinky -> $blinky")
+        Log.d("GamePlayScreen", "blinky -> $blinky, pinky -> $pinky, inky -> $inky, clyde -> $clyde")
 
         val animatableCutAngle = remember {
             Animatable(CutAngle)
