@@ -14,4 +14,7 @@ interface PacmanController {
     fun moveRight()
     fun moveUp()
     fun moveDown()
+    fun setFullSpeed(speed: Float)
+    fun setDotEatingSpeed(speed: Float)
+    fun changeCurrentSpeed()
 }

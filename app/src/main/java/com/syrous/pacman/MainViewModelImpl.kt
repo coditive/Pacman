@@ -30,6 +30,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     private var pausedTime: Long = 0L
     private var tickInterval = 0.0
     private var timeDelta = 0.0
+    private var intervalTime = 0
     private var canDecreaseFps: Boolean = false
     private var tickMultiplier = 0
     private val DEFAULT_FPS = availableFps[0]
@@ -39,6 +40,8 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     override fun startGame() {
         currentScreen.value = GameScreen.GAME_PLAY
         isStarted = true
+        gameState.startGamePlay()
+        gameState.updateDefaultFps(DEFAULT_FPS)
         initializeTickInterval()
         resumeGame()
     }
@@ -106,6 +109,8 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
                 }
 
             }
+            intervalTime = (intervalTime + 1) % DEFAULT_FPS
+            gameState.updateIntervalTime(intervalTime)
             gameState.handleTimers()
         }
     }

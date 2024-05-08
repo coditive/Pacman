@@ -1,6 +1,7 @@
 package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
+import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
@@ -9,6 +10,8 @@ import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toPinky
 import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.ghostSpeed
+import com.syrous.pacman.util.ghostTunnelSpeed
 import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.plus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +27,10 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.RIGHT,
+            physicalSpeed = 0f,
+            fullSpeed = 0f,
+            tunnelSpeed = 0f,
+            speed = CurrentSpeed.NORMAL
         )
     )
 
@@ -68,6 +75,10 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
+            speed = CurrentSpeed.NORMAL
         )
         ghost.value = Pinky(
             position = Pair(13 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
@@ -77,6 +88,10 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
+            speed = CurrentSpeed.NORMAL
         )
     }
 
@@ -102,27 +117,69 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
                 followRoutine { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
-                    actor = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
+                    ghost.value = actorUpdateInfo.toPinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
+                    actor = actorUpdateInfo.toPinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
                 }
                 if (mode == GhostMode.ENTERING_CAGE) {
                     followRoutine { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
-                        actor = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
+                        ghost.value = actorUpdateInfo.toPinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
+                        actor = actorUpdateInfo.toPinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
                     }
                 }
             } else {
                 step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
-                    actor = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
+                    ghost.value = actorUpdateInfo.toPinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
+                    actor = actorUpdateInfo.toPinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
                 }
                 if (mode == GhostMode.EATEN) {
                     step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
-                        actor = actorUpdateInfo.toPinky(scaleFactorX, scaleFactorY)
+                        ghost.value = actorUpdateInfo.toPinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
+                        actor = actorUpdateInfo.toPinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
                     }
                 }
             }
+        }
+    }
+
+    override fun changeCurrentSpeed(speed: CurrentSpeed) {
+        actor = ghost.value.copy(speed = speed)
+        changeCurrentSpeed()
+    }
+
+    override fun changeCurrentSpeed() {
+        val s = when (actor.speed) {
+            CurrentSpeed.NONE -> 0f
+            CurrentSpeed.NORMAL -> getNormalSpeed()
+            CurrentSpeed.PACMAN_EATING -> 0f
+            CurrentSpeed.PASSING_TUNNEL -> actor.tunnelSpeed
+        }
+        if (actor.physicalSpeed != s) {
+            actor = ghost.value.copy(physicalSpeed = s)
+            intervalSpeedTable = gameState.getSpeedIntervals(s)
         }
     }
 

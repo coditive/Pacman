@@ -21,7 +21,7 @@ import com.syrous.pacman.util.plus
 
 abstract class GhostController(
     private val gameState: GameState
-) : ActorController() {
+) : ActorController(gameState) {
 
     protected var followingRoutine: Boolean = true
     private var proceedToNextRoutine: Boolean = false
@@ -82,6 +82,8 @@ abstract class GhostController(
             val ghostX = move.x * UnitScale
             val ghostY = move.y * UnitScale
             val dir = move.direction
+            intervalSpeedTable = gameState.getSpeedIntervals(move.speed)
+
             proceedToNextRoutine = false
             updateActor(
                 ActorUpdateInfo(
@@ -91,6 +93,10 @@ abstract class GhostController(
                     direction = dir,
                     lastActiveDir = actor.lastActiveDir,
                     nextDir = actor.nextDir,
+                    physicalSpeed = actor.physicalSpeed,
+                    speed = actor.speed,
+                    fullSpeed = actor.fullSpeed,
+                    tunnelSpeed = actor.tunnelSpeed
                 )
             )
         }
@@ -143,6 +149,10 @@ abstract class GhostController(
                     direction = actor.direction,
                     lastActiveDir = actor.lastActiveDir,
                     nextDir = actor.nextDir,
+                    physicalSpeed = actor.physicalSpeed,
+                    speed = actor.speed,
+                    fullSpeed = actor.fullSpeed,
+                    tunnelSpeed = actor.tunnelSpeed
                 )
             )
         }
@@ -207,6 +217,7 @@ abstract class GhostController(
                 routineMoveId = -1
             }
         }
+        changeCurrentSpeed()
     }
 
     private fun decideNextDir(
@@ -280,6 +291,8 @@ abstract class GhostController(
         }
 
     }
+
+    open fun getNormalSpeed(): Float = actor.fullSpeed
 
     abstract fun setReverseDirectionNext(reversed: Boolean)
 

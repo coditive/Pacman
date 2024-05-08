@@ -2,6 +2,7 @@ package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
 import com.syrous.pacman.model.Blinky
+import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
@@ -9,8 +10,9 @@ import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toBlinky
 import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.ghostSpeed
+import com.syrous.pacman.util.ghostTunnelSpeed
 import kotlinx.coroutines.flow.MutableStateFlow
-import timber.log.Timber
 
 class BlinkyController(private val gameState: GameState) : GhostController(gameState) {
 
@@ -23,6 +25,10 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = 0f,
+            tunnelSpeed = 0f,
+            speed = CurrentSpeed.NORMAL
         )
     )
 
@@ -46,7 +52,6 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
         scatterPos = Pair(1 * UnitScale.toFloat(), 1 * UnitScale.toFloat())
-        Timber.d("scaleFactorX => $scaleFactorX, scaleFactorY => $scaleFactorY")
         actor = Blinky(
             position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
             tilePos = Pair(15, 12),
@@ -55,6 +60,10 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
+            speed = CurrentSpeed.NORMAL
         )
         ghost.value = Blinky(
             position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
@@ -64,7 +73,16 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
+            speed = CurrentSpeed.NORMAL
         )
+    }
+
+    override fun getNormalSpeed(): Float {
+        return if (mode == GhostMode.PATROLLING || mode == GhostMode.CHASING) gameState.getCruiseElroySpeed()
+        else actor.fullSpeed
     }
 
     override fun updateTargetPos() {
@@ -88,27 +106,71 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
                 followRoutine { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
-                    actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                    ghost.value = actorUpdateInfo.toBlinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
+                    actor = actorUpdateInfo.toBlinky(
+                        scaleFactorX,
+                        scaleFactorY,
+
+                        )
                 }
                 if (mode == GhostMode.ENTERING_CAGE) {
                     followRoutine { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
-                        actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                        ghost.value = actorUpdateInfo.toBlinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
+                        actor = actorUpdateInfo.toBlinky(
+                            scaleFactorX,
+                            scaleFactorY,
+
+                            )
                     }
                 }
             } else {
                 step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
-                    actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                    ghost.value = actorUpdateInfo.toBlinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
+                    actor = actorUpdateInfo.toBlinky(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
                 }
                 if (mode == GhostMode.EATEN) {
                     step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
-                        actor = actorUpdateInfo.toBlinky(scaleFactorX, scaleFactorY)
+                        ghost.value = actorUpdateInfo.toBlinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
+                        actor = actorUpdateInfo.toBlinky(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
                     }
                 }
             }
+        }
+    }
+
+    override fun changeCurrentSpeed(speed: CurrentSpeed) {
+        actor = ghost.value.copy(speed = speed)
+        changeCurrentSpeed()
+    }
+
+    override fun changeCurrentSpeed() {
+        val s = when (actor.speed) {
+            CurrentSpeed.NONE -> 0f
+            CurrentSpeed.NORMAL -> getNormalSpeed()
+            CurrentSpeed.PACMAN_EATING -> 0f
+            CurrentSpeed.PASSING_TUNNEL -> actor.tunnelSpeed
+        }
+        if (actor.physicalSpeed != s) {
+            actor = ghost.value.copy(physicalSpeed = s)
+            intervalSpeedTable = gameState.getSpeedIntervals(s)
         }
     }
 
