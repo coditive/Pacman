@@ -36,6 +36,7 @@ import com.syrous.pacman.util.playerSpeed
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import timber.log.Timber
 import kotlin.math.floor
 
 class GameStateImpl : GameState {
@@ -95,6 +96,15 @@ class GameStateImpl : GameState {
         lives = 3
         level = 0
         currentPlayerSpeed = playerSpeed
+        restartGamePlay()
+    }
+
+    private fun restartGamePlay() {
+        frightModeTime = 0.0
+        intervalTime = 0
+        ghostModeSwitchPos = 0
+        ghostModeTime = ghostModeSwitchTimes[0] * DEFAULT_FPS
+        Timber.d("ghostModeTime init -> $ghostModeTime")
     }
 
     override fun updateScreenDimensions(width: Int, height: Int) {
@@ -268,6 +278,7 @@ class GameStateImpl : GameState {
     }
 
     private fun switchMainGhostMode(mode: GhostMode, justRestartGame: Boolean) {
+        Timber.d("SwitchMainGhostMode changed => $mode")
         if (mode == FLEEING && frightTime == 0) {
             for (ghost in ghostControllerList) {
                 ghost.setReverseDirectionNext(true) // If frightTime is 0, a frightened ghost only reverse its direction.
@@ -417,6 +428,7 @@ class GameStateImpl : GameState {
     }
 
     private fun handleGhostModeTimer() {
+        Timber.d("ghostModeTime -> $ghostModeTime")
         if(frightModeTime != 0.0) {
             frightModeTime -= 1
             if (frightModeTime <= 0) {
@@ -425,6 +437,7 @@ class GameStateImpl : GameState {
             }
         } else if(ghostModeTime > 0) {
             ghostModeTime -= 1
+            Timber.d("ghostModeTime -> $ghostModeTime")
             if(ghostModeTime <= 0) {
                 ghostModeTime = 0.0
                 ghostModeSwitchPos += 1

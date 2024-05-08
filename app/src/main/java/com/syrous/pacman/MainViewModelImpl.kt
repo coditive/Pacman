@@ -40,8 +40,8 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     override fun startGame() {
         currentScreen.value = GameScreen.GAME_PLAY
         isStarted = true
-        gameState.startGamePlay()
         gameState.updateDefaultFps(DEFAULT_FPS)
+        gameState.startGamePlay()
         initializeTickInterval()
         resumeGame()
     }
