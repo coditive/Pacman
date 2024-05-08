@@ -2,14 +2,20 @@ package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
 import com.syrous.pacman.model.Clyde
+import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
+import com.syrous.pacman.model.GamePlayMode
 import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toClyde
+import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.getEuclideanDistanceBetweenInt
+import com.syrous.pacman.util.ghostSpeed
+import com.syrous.pacman.util.ghostTunnelSpeed
 import kotlinx.coroutines.flow.MutableStateFlow
 
-class ClydeController(gameState: GameState) : GhostController(gameState) {
+class ClydeController(private val gameState: GameState) : GhostController(gameState) {
 
     val ghost: MutableStateFlow<Clyde> = MutableStateFlow(
         Clyde(
@@ -20,6 +26,10 @@ class ClydeController(gameState: GameState) : GhostController(gameState) {
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.RIGHT,
+            physicalSpeed = 0f,
+            fullSpeed = 0f,
+            tunnelSpeed = 0f,
+            speed = CurrentSpeed.NORMAL
         )
     )
 
@@ -30,7 +40,13 @@ class ClydeController(gameState: GameState) : GhostController(gameState) {
                 MoveInCage(14.5f, 12f, Directions.UP, 3f, 0.8f * 0.6f),
             )
         )
-        put(GhostMode.IN_CAGE, listOf())
+        put(
+            GhostMode.IN_CAGE, listOf(
+                MoveInCage(13f, 15f, Directions.RIGHT, 1f, 0.8f * 0.6f),
+                MoveInCage(14f, 15f, Directions.RIGHT, 2f, 0.8f * 0.6f),
+                MoveInCage(16f, 17f, Directions.LEFT, 3f, 0.8f * 0.6f),
+            )
+        )
         put(
             GhostMode.LEAVING_CAGE, listOf(
                 MoveInCage(14.5f, 12f, Directions.RIGHT, 0.5f, 0.8f * 0.6f),
@@ -50,46 +66,119 @@ class ClydeController(gameState: GameState) : GhostController(gameState) {
         this.scaleFactorX = scaleFactorX
         this.scaleFactorY = scaleFactorY
         scatterPos = Pair(1 * scaleFactorX.toFloat(), 30 * scaleFactorY.toFloat())
-
+        actor = Clyde(
+            position = Pair(16 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
+            tilePos = Pair(16, 15),
+            lastGoodTilePos = Pair(16, 15),
+            screenPos = Pair(16f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
+            speed = CurrentSpeed.NORMAL
+        )
+        ghost.value = Clyde(
+            position = Pair(16 * UnitScale.toFloat(), 15 * UnitScale.toFloat()),
+            tilePos = Pair(16, 15),
+            lastGoodTilePos = Pair(16, 15),
+            screenPos = Pair(16f * UnitScale * scaleFactorX, 15f * UnitScale * scaleFactorY),
+            lastActiveDir = Directions.RIGHT,
+            direction = Directions.RIGHT,
+            nextDir = Directions.NONE,
+            physicalSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
+            speed = CurrentSpeed.NORMAL
+        )
     }
 
-    override fun updateTargetPos(pos: Pair<Float, Float>) {
-        TODO("Not yet implemented")
+    override fun updateTargetPos() {
+        val pacman = gameState.pacman.value
+        val distance = getEuclideanDistanceBetweenInt(pacman.tilePos, gameState.clyde.value.tilePos)
+        this.targetPos = if (distance > 64f) Pair(
+            pacman.tilePos.first * UnitScale.toFloat(), pacman.tilePos.second * UnitScale.toFloat()
+        )
+        else this.scatterPos
     }
 
     override fun getMovesInCage(): List<MoveInCage> {
-        return if (MOVES_IN_CAGE.containsKey(mode))
-            MOVES_IN_CAGE[mode]!!
+        return if (MOVES_IN_CAGE.containsKey(mode)) MOVES_IN_CAGE[mode]!!
         else emptyList()
     }
 
     override fun move() {
-        if (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE) {
+        if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
-                followRoutine(ghost.value) { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-                    actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                followRoutine { actorUpdateInfo ->
+                    ghost.value = actorUpdateInfo.toClyde(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
+                    actor = actorUpdateInfo.toClyde(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
                 }
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine(ghost.value) { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-                        actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                    followRoutine { actorUpdateInfo ->
+                        ghost.value = actorUpdateInfo.toClyde(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
+                        actor = actorUpdateInfo.toClyde(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
                     }
                 }
             } else {
                 step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-                    actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                    ghost.value = actorUpdateInfo.toClyde(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
+                    actor = actorUpdateInfo.toClyde(
+                        scaleFactorX,
+                        scaleFactorY,
+                    )
                 }
                 if (mode == GhostMode.EATEN) {
                     step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
-                        actor = actorUpdateInfo.toClyde(scaleFactorX, scaleFactorY)
+                        ghost.value = actorUpdateInfo.toClyde(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
+                        actor = actorUpdateInfo.toClyde(
+                            scaleFactorX,
+                            scaleFactorY,
+                        )
                     }
                 }
             }
         }
     }
+
+    override fun changeCurrentSpeed(speed: CurrentSpeed) {
+        actor = ghost.value.copy(speed = speed)
+        changeCurrentSpeed()
+    }
+
+    override fun changeCurrentSpeed() {
+        val s = when (actor.speed) {
+            CurrentSpeed.NONE -> 0f
+            CurrentSpeed.NORMAL -> getNormalSpeed()
+            CurrentSpeed.PACMAN_EATING -> 0f
+            CurrentSpeed.PASSING_TUNNEL -> actor.tunnelSpeed
+        }
+        if (actor.physicalSpeed != s) {
+            actor = ghost.value.copy(physicalSpeed = s)
+            intervalSpeedTable = gameState.getSpeedIntervals(s)
+        }
+    }
+
+
     override fun setReverseDirectionNext(reversed: Boolean) {
         reverseDirectionsNext = reversed
     }

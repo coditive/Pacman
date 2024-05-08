@@ -26,8 +26,14 @@ interface GameState {
     val isPaused: StateFlow<Boolean>
     val gameEvent: SharedFlow<GameEvent>
 
+    fun startGamePlay()
     fun updateScreenDimensions(width: Int, height: Int)
     suspend fun updatePositionAfterLoop()
+    fun updateIntervalTime(intervalTime: Int)
+    fun updateDefaultFps(fps: Int)
+    fun getSpeedIntervals(speed: Float): BooleanArray
+    fun getIntervalTime(): Int
+    fun updateTargetPosAfterLoop()
     fun handleTimers()
     fun pauseGame()
     fun resumeGame()
@@ -40,5 +46,5 @@ interface GameState {
     fun getMainGhostMain(): GhostMode
     fun getLastMainGhostMode(): GhostMode
     fun getGamePlayMode(): GamePlayMode
-
+    fun getCruiseElroySpeed(): Float
 }

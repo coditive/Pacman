@@ -30,6 +30,7 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     private var pausedTime: Long = 0L
     private var tickInterval = 0.0
     private var timeDelta = 0.0
+    private var intervalTime = 0
     private var canDecreaseFps: Boolean = false
     private var tickMultiplier = 0
     private val DEFAULT_FPS = availableFps[0]
@@ -39,6 +40,8 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
     override fun startGame() {
         currentScreen.value = GameScreen.GAME_PLAY
         isStarted = true
+        gameState.updateDefaultFps(DEFAULT_FPS)
+        gameState.startGamePlay()
         initializeTickInterval()
         resumeGame()
     }
@@ -100,7 +103,14 @@ class MainViewModelImpl : ViewModel(), GameViewModel, GameController {
         for (i in 0 until tickMultiplier + latency) {
             if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
                 gameState.updatePositionAfterLoop()
+
+                if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
+                    gameState.updateTargetPosAfterLoop()
+                }
+
             }
+            intervalTime = (intervalTime + 1) % DEFAULT_FPS
+            gameState.updateIntervalTime(intervalTime)
             gameState.handleTimers()
         }
     }

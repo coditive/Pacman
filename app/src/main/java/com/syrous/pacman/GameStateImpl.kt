@@ -26,10 +26,18 @@ import com.syrous.pacman.util.PATHS
 import com.syrous.pacman.util.PATH_WITHOUT_FOOD
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.VERTICAL_WALL_LIST
+import com.syrous.pacman.util.dotEatingFrightSpeed
+import com.syrous.pacman.util.dotEatingSpeed
+import com.syrous.pacman.util.elroySpeedPart1
+import com.syrous.pacman.util.frightTime
+import com.syrous.pacman.util.ghostModeSwitchTimes
+import com.syrous.pacman.util.playerFrightSpeed
+import com.syrous.pacman.util.playerSpeed
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import timber.log.Timber
+import kotlin.math.floor
 
 class GameStateImpl : GameState {
 
@@ -46,6 +54,16 @@ class GameStateImpl : GameState {
     private var lastMainGhostMode = GhostMode.NONE
     private var modeScoreMultiplier = 0
     private var gamePlayMode: GamePlayMode = GamePlayMode.NEWGAME_STARTING
+    private var intervalTime = 0
+    private val intervalSpeedTable = mutableMapOf<Float, BooleanArray>()
+    private var DEFAULT_FPS = 0
+    private var currentPlayerSpeed = 0f
+    private var currentDotEatingSpeed = 0f
+    private var level = 0
+    private var lives = 0
+    private var frightModeTime = 0.0
+    private var ghostModeTime = 0.0
+    private var ghostModeSwitchPos = 0
 
     private val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     private val pacmanController: PacmanController = PacmanControllerImpl(this) { gameInternalEvent ->
@@ -64,7 +82,7 @@ class GameStateImpl : GameState {
     override val hWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val vWallList = MutableStateFlow(hashMapOf<Pair<Float, Float>, Pair<Float, Float>>())
     override val foodList = MutableStateFlow<MutableMap<Int, MutableMap<Int, Food>>>(mutableMapOf())
-    override val score = MutableStateFlow(0)
+    override var score = MutableStateFlow(0)
 
     override val blinky: StateFlow<Blinky> = blinkyController.ghost
     override val pinky: StateFlow<Pinky> = pinkyController.ghost
@@ -73,6 +91,21 @@ class GameStateImpl : GameState {
 
     override val isPaused = MutableStateFlow(false)
     override val gameEvent = MutableSharedFlow<GameEvent>()
+    override fun startGamePlay() {
+        score.value = 0
+        lives = 3
+        level = 0
+        currentPlayerSpeed = playerSpeed
+        restartGamePlay()
+    }
+
+    private fun restartGamePlay() {
+        frightModeTime = 0.0
+        intervalTime = 0
+        ghostModeSwitchPos = 0
+        ghostModeTime = ghostModeSwitchTimes[0] * DEFAULT_FPS
+        Timber.d("ghostModeTime init -> $ghostModeTime")
+    }
 
     override fun updateScreenDimensions(width: Int, height: Int) {
         if (width != screenWidth && height != screenHeight) {
@@ -225,9 +258,6 @@ class GameStateImpl : GameState {
                 }
             }
         }
-
-        Timber.d("Playfield -> $playField")
-
     }
 
     private fun createPlayFieldElements() {
@@ -248,25 +278,26 @@ class GameStateImpl : GameState {
     }
 
     private fun switchMainGhostMode(mode: GhostMode, justRestartGame: Boolean) {
-        if (mode == GhostMode.FLEEING) {
+        Timber.d("SwitchMainGhostMode changed => $mode")
+        if (mode == FLEEING && frightTime == 0) {
             for (ghost in ghostControllerList) {
                 ghost.setReverseDirectionNext(true) // If frightTime is 0, a frightened ghost only reverse its direction.
             }
         } else {
             val oldMainGhostMode = mainGhostMode
-            if (mode == GhostMode.FLEEING && mainGhostMode != GhostMode.FLEEING) {
+            if (mode == FLEEING && mainGhostMode != FLEEING) {
                 lastMainGhostMode = mainGhostMode
             }
             mainGhostMode = mode
-            if (mode == GhostMode.FLEEING || oldMainGhostMode == GhostMode.FLEEING) {
-
-            }
             when (mode) {
                 CHASING, PATROLLING -> {
-
+                    currentPlayerSpeed = playerSpeed * 0.8f
+                    currentDotEatingSpeed = dotEatingSpeed * 0.8f
                 }
 
                 FLEEING -> {
+                    currentPlayerSpeed = playerFrightSpeed * 0.8f
+                    currentDotEatingSpeed = dotEatingFrightSpeed * 0.8f
                     modeScoreMultiplier = 1
                 }
 
@@ -276,7 +307,7 @@ class GameStateImpl : GameState {
                 if (mode != GhostMode.ENTERING_CAGE && !justRestartGame) {
                     ghost.setModeChangedWhileInCage(true)
                 }
-                if (mode == GhostMode.FLEEING) {
+                if (mode == FLEEING) {
                     ghost.setModeChangedWhileInCage(false)
                 }
                 if (ghost.getGhostMode() != GhostMode.EATEN &&
@@ -289,7 +320,7 @@ class GameStateImpl : GameState {
                     // If it is not immediately after restart the game (justRestartGame:false),
                     // a ghost reverse its direction
                     // when its mode change from other than FRIGHTENED (CHASE or SCATTER) to another mode.
-                    if (!justRestartGame && ghost.getGhostMode() != GhostMode.FLEEING && ghost.getGhostMode() != mode) {
+                    if (!justRestartGame && ghost.getGhostMode() != FLEEING && ghost.getGhostMode() != mode) {
                         ghost.setReverseDirectionNext(true)
                     }
 
@@ -299,7 +330,9 @@ class GameStateImpl : GameState {
                     ghost.switchGhostMode(mode)
                 }
             }
-
+            pacmanController.setFullSpeed(currentPlayerSpeed)
+            pacmanController.setDotEatingSpeed(currentDotEatingSpeed)
+            pacmanController.changeCurrentSpeed()
         }
     }
 
@@ -351,10 +384,77 @@ class GameStateImpl : GameState {
         }
     }
 
-    override fun handleTimers() {
-        handleGamePlayModeTimer()
+    override fun updateIntervalTime(intervalTime: Int) {
+        this.intervalTime = intervalTime
     }
 
+    override fun updateDefaultFps(fps: Int) {
+        DEFAULT_FPS = fps
+    }
+
+    override fun getSpeedIntervals(speed: Float): BooleanArray {
+        if(intervalSpeedTable.containsKey(speed).not()){
+            var distance = 0f
+            var lastPos = 0f
+            val speedTable = mutableListOf<Boolean>()
+            for(i in 0 until DEFAULT_FPS) {
+                distance += speed
+                val pos = floor(distance)
+                if(pos > lastPos) {
+                    speedTable.add(true)
+                    lastPos = pos
+                } else {
+                    speedTable.add(false)
+                }
+            }
+            intervalSpeedTable[speed] = speedTable.toBooleanArray()
+        }
+        return intervalSpeedTable[speed]!!
+    }
+
+    override fun getIntervalTime(): Int {
+        return intervalTime
+    }
+
+    override fun updateTargetPosAfterLoop() {
+        for(ghost in ghostControllerList) {
+            ghost.updateTargetPos()
+        }
+    }
+
+    override fun handleTimers() {
+        handleGamePlayModeTimer()
+        handleGhostModeTimer()
+    }
+
+    private fun handleGhostModeTimer() {
+        Timber.d("ghostModeTime -> $ghostModeTime")
+        if(frightModeTime != 0.0) {
+            frightModeTime -= 1
+            if (frightModeTime <= 0) {
+                frightModeTime = 0.0
+                finishFrightMode()
+            }
+        } else if(ghostModeTime > 0) {
+            ghostModeTime -= 1
+            Timber.d("ghostModeTime -> $ghostModeTime")
+            if(ghostModeTime <= 0) {
+                ghostModeTime = 0.0
+                ghostModeSwitchPos += 1
+                if(ghostModeSwitchPos < ghostModeSwitchTimes.size) {
+                    ghostModeTime = ghostModeSwitchTimes[ghostModeSwitchPos] * DEFAULT_FPS
+                    when (mainGhostMode) {
+                        PATROLLING -> switchMainGhostMode(CHASING, false)
+                        CHASING -> switchMainGhostMode(PATROLLING, false)
+                        else -> {}
+                    }
+                }
+            }
+        }
+    }
+    private fun finishFrightMode() {
+        switchMainGhostMode(lastMainGhostMode, false)
+    }
     private fun handleGamePlayModeTimer() {
         when (gamePlayMode) {
             GamePlayMode.GHOST_DIED -> {}
@@ -401,7 +501,17 @@ class GameStateImpl : GameState {
 
 
     private fun updateScore(food: Food) {
-        foodEaten += 1
+        foodEaten = score.value
+        when(food) {
+            Food.NONE -> {}
+            Food.PELLET -> {
+                foodEaten += 10
+            }
+            Food.ENERGIZER -> {
+                switchMainGhostMode(FLEEING, false)
+                foodEaten += 50
+            }
+        }
         score.value = foodEaten
     }
 
@@ -416,7 +526,6 @@ class GameStateImpl : GameState {
         pacmanController.updatePlayField(playField)
         foodList.value = listOfAvailableFood
     }
-
 
     override fun pauseGame() {
         isPaused.value = true
@@ -460,6 +569,10 @@ class GameStateImpl : GameState {
 
     override fun getGamePlayMode(): GamePlayMode {
         return gamePlayMode
+    }
+
+    override fun getCruiseElroySpeed(): Float {
+        return elroySpeedPart1
     }
 
     private fun initializePacman() {

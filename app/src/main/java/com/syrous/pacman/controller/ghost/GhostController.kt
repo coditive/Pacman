@@ -16,13 +16,12 @@ import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.getOppositeDir
 import com.syrous.pacman.util.CAGE_ENTRANCE_TILE
 import com.syrous.pacman.util.UnitScale
-import com.syrous.pacman.util.getEuclideanDistanceBetween
+import com.syrous.pacman.util.getEuclideanDistanceBetweenFloat
 import com.syrous.pacman.util.plus
-import timber.log.Timber
 
 abstract class GhostController(
     private val gameState: GameState
-) : ActorController() {
+) : ActorController(gameState) {
 
     protected var followingRoutine: Boolean = true
     private var proceedToNextRoutine: Boolean = false
@@ -34,24 +33,24 @@ abstract class GhostController(
     protected var scaleFactorX = 0
     protected var scaleFactorY = 0
     protected var ghostModeChangedInCage = false
-    private var targetPos: Pair<Float, Float> = Pair(0f, 0f)
+    protected var targetPos: Pair<Float, Float> = Pair(0f, 0f)
     protected var scatterPos: Pair<Float, Float> = Pair(0f, 0f)
 
     abstract fun init(playField: Map<Int, Map<Int, Tile>>, scaleFactorX: Int, scaleFactorY: Int)
 
-    fun followRoutine(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
-        if (proceedToNextRoutine) {
-            switchFollowingRoutine(actor, updateActor)
+    fun followRoutine(updateActor: (ActorUpdateInfo) -> Unit) {
+        if (routineMoveId == -1 || proceedToNextRoutine) {
+            switchFollowingRoutine(updateActor)
         }
-        continueFollowingRoutine(actor, updateActor)
+        continueFollowingRoutine(updateActor)
     }
 
-    private fun switchFollowingRoutine(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    private fun switchFollowingRoutine(updateActor: (ActorUpdateInfo) -> Unit) {
         this.routineMoveId += 1
         if (this.routineMoveId == getMovesInCage().size) {
             when {
-                mode == GhostMode.IN_CAGE && freeToExitCage && gameState.isGhostExitingCage()
-                    .not() -> {
+                mode == GhostMode.IN_CAGE && freeToExitCage &&
+                        gameState.isGhostExitingCage().not() -> {
                     switchGhostMode(
                         if (eatenInFrightenedMode) GhostMode.RE_LEAVING_CAGE else GhostMode.LEAVING_CAGE,
                     )
@@ -76,28 +75,34 @@ abstract class GhostController(
 
                 else -> {
                     routineMoveId = 0
-                    val move = getMovesInCage()[routineMoveId]
-                    val ghostX = move.x * UnitScale
-                    val ghostY = move.y * UnitScale
-                    val dir = move.direction
-                    proceedToNextRoutine = false
-                    updateActor(
-                        ActorUpdateInfo(
-                            position = Pair(ghostX, ghostY),
-                            tilePos = actor.tilePos,
-                            lastGoodTilePos = actor.lastGoodTilePos,
-                            direction = dir,
-                            lastActiveDir = actor.lastActiveDir,
-                            nextDir = actor.nextDir,
-                        )
-                    )
-
                 }
             }
+
+            val move = getMovesInCage()[routineMoveId]
+            val ghostX = move.x * UnitScale
+            val ghostY = move.y * UnitScale
+            val dir = move.direction
+            intervalSpeedTable = gameState.getSpeedIntervals(move.speed)
+
+            proceedToNextRoutine = false
+            updateActor(
+                ActorUpdateInfo(
+                    position = Pair(ghostX, ghostY),
+                    tilePos = actor.tilePos,
+                    lastGoodTilePos = actor.lastGoodTilePos,
+                    direction = dir,
+                    lastActiveDir = actor.lastActiveDir,
+                    nextDir = actor.nextDir,
+                    physicalSpeed = actor.physicalSpeed,
+                    speed = actor.speed,
+                    fullSpeed = actor.fullSpeed,
+                    tunnelSpeed = actor.tunnelSpeed
+                )
+            )
         }
     }
 
-    private fun continueFollowingRoutine(actor: Actor, updateActor: (ActorUpdateInfo) -> Unit) {
+    private fun continueFollowingRoutine(updateActor: (ActorUpdateInfo) -> Unit) {
         var move: MoveInCage? = null
         if (routineMoveId >= 0 && routineMoveId < getMovesInCage().size) {
             move = getMovesInCage()[routineMoveId]
@@ -106,20 +111,31 @@ abstract class GhostController(
             val dir = actor.direction
             val pos = actor.position
             var newPos = pos + dir.move
+
             when (dir) {
                 Directions.NONE -> {}
-                Directions.LEFT, Directions.RIGHT -> {
-                    val moveCageX = (move.x + move.direction.move.first * move.dest) * UnitScale
-                    if (newPos.first < moveCageX || newPos.first > moveCageX) {
-                        newPos = Pair(moveCageX, newPos.second)
+                Directions.LEFT -> {
+                    if (newPos.first < move.dest * UnitScale){
+                        newPos = Pair(move.dest * UnitScale, newPos.second)
+                        proceedToNextRoutine = true
+                    }
+                }
+                Directions.UP -> {
+                    if (newPos.second < move.dest * UnitScale){
+                        newPos = Pair(newPos.first, move.dest * UnitScale)
                         proceedToNextRoutine = true
                     }
                 }
 
-                Directions.UP, Directions.DOWN -> {
-                    val moveCageY = (move.y + move.direction.move.first * move.dest) * UnitScale
-                    if (newPos.second < moveCageY || newPos.second > moveCageY) {
-                        newPos = Pair(moveCageY, newPos.second)
+                Directions.RIGHT -> {
+                    if (newPos.first > move.dest * UnitScale){
+                        newPos = Pair(move.dest * UnitScale, newPos.second)
+                        proceedToNextRoutine = true
+                    }
+                }
+                Directions.DOWN -> {
+                    if (newPos.second > move.dest * UnitScale){
+                        newPos = Pair(newPos.first, move.dest * UnitScale)
                         proceedToNextRoutine = true
                     }
                 }
@@ -133,6 +149,10 @@ abstract class GhostController(
                     direction = actor.direction,
                     lastActiveDir = actor.lastActiveDir,
                     nextDir = actor.nextDir,
+                    physicalSpeed = actor.physicalSpeed,
+                    speed = actor.speed,
+                    fullSpeed = actor.fullSpeed,
+                    tunnelSpeed = actor.tunnelSpeed
                 )
             )
         }
@@ -197,6 +217,7 @@ abstract class GhostController(
                 routineMoveId = -1
             }
         }
+        changeCurrentSpeed()
     }
 
     private fun decideNextDir(
@@ -210,12 +231,10 @@ abstract class GhostController(
             currentTile.first + dir.move.first.toInt(),
             currentTile.second + dir.move.second.toInt()
         )
-        Timber.d("inside decideNextDir !!, newTile -> $newTile, reveresed -> $reversed, target -> $targetPos")
         var destination = getPlayFieldTile(newTile)
         if (reversed && destination.isIntersection.not()) {
             destination = getPlayFieldTile(currentTile)
         }
-        Timber.d("inside decideNextDir!!, destination -> $destination")
         if (destination.isIntersection) {
             when (this.mode) {
                 GhostMode.PATROLLING,
@@ -230,7 +249,7 @@ abstract class GhostController(
                             if (dir != d.getOppositeDir()) {
                                 val newTileCandidate = ghost.position + d.move
                                 val distance =
-                                    getEuclideanDistanceBetween(newTileCandidate, targetPos)
+                                    getEuclideanDistanceBetweenFloat(newTileCandidate, targetPos)
                                 if (minDist > distance) {
                                     preferredDir = d
                                     minDist = distance
@@ -249,7 +268,6 @@ abstract class GhostController(
                         is Inky -> ghost.copy(nextDir = nextDir)
                         is Pinky -> ghost.copy(nextDir = nextDir)
                     }
-                    Timber.d("After Deciding direction -> $actor")
                 }
 
                 GhostMode.FLEEING -> {
@@ -274,6 +292,8 @@ abstract class GhostController(
 
     }
 
+    open fun getNormalSpeed(): Float = actor.fullSpeed
+
     abstract fun setReverseDirectionNext(reversed: Boolean)
 
     fun setModeChangedWhileInCage(change: Boolean) {
@@ -282,7 +302,7 @@ abstract class GhostController(
 
     fun getGhostMode(): GhostMode = mode
 
-    abstract fun updateTargetPos(pos: Pair<Float, Float>)
+    abstract fun updateTargetPos()
 
     abstract fun getMovesInCage(): List<MoveInCage>
 
@@ -298,19 +318,22 @@ abstract class GhostController(
                 val dir = actor.direction.getOppositeDir()
                 val nextDir = Directions.NONE
                 this.reverseDirectionsNext = false
-               val newActor = when (actor) {
+                val newActor = when (actor) {
                     is Blinky -> {
                         this.actor = actor.copy(direction = dir, nextDir = nextDir)
                         actor.copy(direction = dir, nextDir = nextDir)
                     }
+
                     is Clyde -> {
                         this.actor = actor.copy(direction = dir, nextDir = nextDir)
                         actor.copy(direction = dir, nextDir = nextDir)
                     }
+
                     is Inky -> {
                         this.actor = actor.copy(direction = dir, nextDir = nextDir)
                         actor.copy(direction = dir, nextDir = nextDir)
                     }
+
                     is Pinky -> {
                         this.actor = actor.copy(direction = dir, nextDir = nextDir)
                         actor.copy(direction = dir, nextDir = nextDir)

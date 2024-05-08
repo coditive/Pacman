@@ -20,6 +20,13 @@ fun Pair<Int, Int>.toFloat(): Pair<Float, Float> = Pair(this.first.toFloat(), th
 fun Pair<Float, Float>.toGamePos(): Pair<Int, Int> =
     Pair(this.first.toInt() / UnitScale, this.second.toInt() / UnitScale)
 
-fun getEuclideanDistanceBetween(
+fun getEuclideanDistanceBetweenFloat(
     start: Pair<Float, Float>, target: Pair<Float, Float>
 ): Float = sqrt((target.first - start.first).pow(2) + (target.second - start.second).pow(2))
+
+fun getEuclideanDistanceBetweenInt(
+    start: Pair<Int, Int>, target: Pair<Int, Int>
+): Float = sqrt(
+    (target.first.toFloat() - start.first.toFloat()).pow(2) +
+            (target.second.toFloat() - start.second.toFloat()).pow(2)
+)

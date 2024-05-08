@@ -1,34 +1,38 @@
 package com.syrous.pacman.controller
 
+import com.syrous.pacman.GameState
 import com.syrous.pacman.model.Actor
 import com.syrous.pacman.model.ActorUpdateInfo
+import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.UnitScale
-import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
-abstract class ActorController {
+abstract class ActorController(private val gameState: GameState) {
 
     protected lateinit var playField: Map<Int, Map<Int, Tile>>
     protected lateinit var actor: Actor
+    protected lateinit var intervalSpeedTable: BooleanArray
     abstract fun move()
     abstract fun adjustOverShootOnEnteringTile(playFieldTile: Tile, actor: Actor)
     abstract fun reverseOnEnteringTile(actor: Actor)
     abstract fun handleObjectOnEncounter(actor: Actor)
     abstract fun decideNextDirAfterEnteredTile(actor: Actor)
     abstract fun haveFood(tilePos: Pair<Int, Int>)
-    fun getOppositeDirection(directions: Directions): Directions {
-        return when (directions) {
+    abstract fun changeCurrentSpeed(speed: CurrentSpeed)
+    abstract fun changeCurrentSpeed()
+
+    fun getOppositeDirection(directions: Directions): Directions =
+        when (directions) {
             Directions.LEFT -> Directions.RIGHT
             Directions.RIGHT -> Directions.LEFT
             Directions.UP -> Directions.DOWN
             Directions.DOWN -> Directions.UP
             Directions.NONE -> Directions.NONE
         }
-    }
 
     fun getPlayFieldTile(tile: Pair<Int, Int>): Tile =
         playField[tile.first * UnitScale]!![tile.second * UnitScale]!!
@@ -37,6 +41,10 @@ abstract class ActorController {
         Pair(tile.first * UnitScale, tile.second * UnitScale)
 
     fun step(updateActor: (ActorUpdateInfo) -> Unit) {
+        if (actor.direction == Directions.NONE || intervalSpeedTable[gameState.getIntervalTime()].not()) {
+            return
+        }
+
         val pos = actor.position
         val dir = actor.direction
         val tilePos = actor.tilePos
@@ -44,7 +52,7 @@ abstract class ActorController {
         val pacX = pos.first + dir.move.first
         val pacY = pos.second + dir.move.second
         val newPos = Pair(pacX, pacY)
-        Timber.d("actor before position increment => $actor, then this.actor => ${this.actor}, and newPos => $newPos")
+
         updateActor(
             ActorUpdateInfo(
                 position = newPos,
@@ -53,6 +61,11 @@ abstract class ActorController {
                 lastActiveDir = actor.lastActiveDir,
                 direction = actor.direction,
                 nextDir = actor.nextDir,
+                physicalSpeed = actor.physicalSpeed,
+                speed = actor.speed,
+                fullSpeed = actor.fullSpeed,
+                tunnelSpeed = actor.tunnelSpeed
+
             )
         )
 
@@ -100,18 +113,17 @@ abstract class ActorController {
                 lastActiveDir = actor.lastActiveDir,
                 direction = actor.direction,
                 nextDir = actor.nextDir,
+                physicalSpeed = actor.physicalSpeed,
+                speed = actor.speed,
+                fullSpeed = actor.fullSpeed,
+                tunnelSpeed = actor.tunnelSpeed
             )
         )
     }
 
     private fun enteredTile(updateActor: (ActorUpdateInfo) -> Unit) {
-
         handleObjectOnEncounter(actor)
-
         decideNextDirAfterEnteredTile(actor)
-
-        Timber.d("actor after deciding next tile -> $actor")
-
         var actorUpdateInfo = ActorUpdateInfo(
             position = actor.position,
             tilePos = actor.tilePos,
@@ -119,6 +131,10 @@ abstract class ActorController {
             lastActiveDir = actor.lastActiveDir,
             direction = actor.direction,
             nextDir = actor.nextDir,
+            physicalSpeed = actor.physicalSpeed,
+            speed = actor.speed,
+            fullSpeed = actor.fullSpeed,
+            tunnelSpeed = actor.tunnelSpeed
         )
 
         val playFieldTile = getPlayFieldTile(actorUpdateInfo.tilePos)
@@ -128,7 +144,6 @@ abstract class ActorController {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actor.direction)
                 }
-                Timber.d("inside nextDir != None, contains(nextDir) => before updateActor => $actorUpdateInfo")
                 updateActor(
                     actorUpdateInfo.copy(
                         direction = actorUpdateInfo.nextDir,
@@ -140,7 +155,6 @@ abstract class ActorController {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
                 }
-                Timber.d("inside direction is not allowed -> ${actor.direction}, tile =>$playFieldTile => before updateActor => $actorUpdateInfo")
                 updateActor(
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)
                 )

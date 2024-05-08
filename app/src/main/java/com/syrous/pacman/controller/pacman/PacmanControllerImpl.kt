@@ -3,6 +3,7 @@ package com.syrous.pacman.controller.pacman
 import com.syrous.pacman.GameState
 import com.syrous.pacman.controller.ActorController
 import com.syrous.pacman.model.Actor
+import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GameInternalEvent
 import com.syrous.pacman.model.GameInternalEvent.PacmanAteFood
@@ -11,18 +12,18 @@ import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toPacman
 import com.syrous.pacman.util.UnitScale
+import com.syrous.pacman.util.dotEatingSpeed
 import com.syrous.pacman.util.minus
+import com.syrous.pacman.util.playerSpeed
 import com.syrous.pacman.util.plus
 import com.syrous.pacman.util.times
 import com.syrous.pacman.util.toFloat
 import com.syrous.pacman.util.toGamePos
 import kotlinx.coroutines.flow.MutableStateFlow
-import timber.log.Timber
 
 class PacmanControllerImpl(
-    private val gameState: GameState,
-    private val gameEventCallback: (GameInternalEvent) -> Unit
-) : ActorController(), PacmanController {
+    private val gameState: GameState, private val gameEventCallback: (GameInternalEvent) -> Unit
+) : ActorController(gameState), PacmanController {
 
     private var requestedChangeDir = Directions.NONE
     private var scaleFactorX = 0
@@ -37,6 +38,11 @@ class PacmanControllerImpl(
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.RIGHT,
+            speed = CurrentSpeed.NORMAL,
+            physicalSpeed = 0f,
+            fullSpeed = 0f,
+            tunnelSpeed = 0f,
+            dotEatingSpeed = 0f
         )
     )
 
@@ -51,7 +57,12 @@ class PacmanControllerImpl(
             lastGoodTilePos = Pair(14, 24),
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
-            nextDir = Directions.RIGHT
+            nextDir = Directions.RIGHT,
+            speed = CurrentSpeed.NORMAL,
+            physicalSpeed = 0f,
+            fullSpeed = playerSpeed,
+            tunnelSpeed = playerSpeed,
+            dotEatingSpeed = dotEatingSpeed
         )
         pacman.value = Pacman(
             position = Pair(14f * UnitScale, 24f * UnitScale),
@@ -60,7 +71,12 @@ class PacmanControllerImpl(
             lastGoodTilePos = Pair(14, 24),
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
-            nextDir = Directions.RIGHT
+            nextDir = Directions.RIGHT,
+            speed = CurrentSpeed.NORMAL,
+            physicalSpeed = 0f,
+            fullSpeed = playerSpeed,
+            tunnelSpeed = playerSpeed,
+            dotEatingSpeed = dotEatingSpeed
         )
     }
 
@@ -69,16 +85,24 @@ class PacmanControllerImpl(
     }
 
     override fun move() {
-       if(gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
-           if (requestedChangeDir != Directions.NONE) {
-               handleDirectionChange(requestedChangeDir)
-               requestedChangeDir = Directions.NONE
-           }
-           step { actorUpdateInfo ->
-               pacman.value = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
-               actor = actorUpdateInfo.toPacman(scaleFactorX, scaleFactorY)
-           }
-       }
+        if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING) {
+            if (requestedChangeDir != Directions.NONE) {
+                handleDirectionChange(requestedChangeDir)
+                requestedChangeDir = Directions.NONE
+            }
+            step { actorUpdateInfo ->
+                pacman.value = actorUpdateInfo.toPacman(
+                    scaleFactorX,
+                    scaleFactorY,
+                    (actor as Pacman).dotEatingSpeed
+                )
+                actor = actorUpdateInfo.toPacman(
+                    scaleFactorX,
+                    scaleFactorY,
+                    (actor as Pacman).dotEatingSpeed
+                )
+            }
+        }
     }
 
     override fun moveLeft() {
@@ -98,8 +122,7 @@ class PacmanControllerImpl(
     }
 
     override fun adjustOverShootOnEnteringTile(
-        playFieldTile: Tile,
-        actor: Actor
+        playFieldTile: Tile, actor: Actor
     ) {
         if (actor is Pacman) {
             if (playFieldTile.isPath.not()) {
@@ -129,8 +152,26 @@ class PacmanControllerImpl(
         gameEventCallback(PacmanAteFood(tilePos))
     }
 
+    override fun changeCurrentSpeed(speed: CurrentSpeed) {
+        actor = pacman.value.copy(speed = speed)
+        changeCurrentSpeed()
+    }
+
+    override fun changeCurrentSpeed() {
+        val s = when (actor.speed) {
+            CurrentSpeed.NONE -> 0f
+            CurrentSpeed.NORMAL -> actor.fullSpeed
+            CurrentSpeed.PACMAN_EATING -> (actor as Pacman).dotEatingSpeed
+            CurrentSpeed.PASSING_TUNNEL -> actor.tunnelSpeed
+        }
+        if (actor.physicalSpeed != s) {
+            actor = pacman.value.copy(physicalSpeed = s)
+            intervalSpeedTable = gameState.getSpeedIntervals(s)
+        }
+    }
+
+
     private fun handleDirectionChange(inputDir: Directions) {
-        Timber.d("inputDir => $inputDir")
         var dir = actor.direction
         val tilePos = actor.tilePos
         var lastActiveDir = actor.lastActiveDir
@@ -140,11 +181,8 @@ class PacmanControllerImpl(
                 lastActiveDir = dir
             }
             actor = pacman.value.copy(
-                direction = dir,
-                nextDir = Directions.NONE,
-                lastActiveDir = lastActiveDir
+                direction = dir, nextDir = Directions.NONE, lastActiveDir = lastActiveDir
             )
-            Timber.d("Pacman value after update => ${pacman.value}")
         } else if (dir != inputDir) {
             val playFieldTile = getPlayFieldTile(tilePos)
             if (dir == Directions.NONE) {
@@ -175,15 +213,10 @@ class PacmanControllerImpl(
                         val newPos = pastTile.toFloat() + dir.move * stepPassed
                         actor = pacman.value.copy(
                             position = Pair(
-                                newPos.first * UnitScale,
-                                newPos.second * UnitScale
-                            ),
-                            screenPos = Pair(
-                                newPos.first * scaleFactorX,
-                                newPos.second * scaleFactorY
-                            ),
-                            direction = dir,
-                            lastActiveDir = dir
+                                newPos.first * UnitScale, newPos.second * UnitScale
+                            ), screenPos = Pair(
+                                newPos.first * scaleFactorX, newPos.second * scaleFactorY
+                            ), direction = dir, lastActiveDir = dir
                         )
                         return
                     }
@@ -191,5 +224,15 @@ class PacmanControllerImpl(
                 actor = pacman.value.copy(nextDir = inputDir)
             }
         }
+    }
+
+    override fun setFullSpeed(speed: Float) {
+        actor = pacman.value.copy(fullSpeed = speed, tunnelSpeed = speed)
+        pacman.value = pacman.value.copy(fullSpeed = speed, tunnelSpeed = speed)
+    }
+
+    override fun setDotEatingSpeed(speed: Float) {
+        actor = pacman.value.copy(dotEatingSpeed = speed)
+        pacman.value = pacman.value.copy(dotEatingSpeed = speed)
     }
 }
