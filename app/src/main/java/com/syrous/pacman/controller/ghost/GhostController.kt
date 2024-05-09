@@ -108,53 +108,57 @@ abstract class GhostController(
             move = getMovesInCage()[routineMoveId]
         }
         if (move != null) {
-            val dir = actor.direction
-            val pos = actor.position
-            var newPos = pos + dir.move
+            if (intervalSpeedTable[gameState.getIntervalTime()]) {
+                val dir = actor.direction
+                val pos = actor.position
+                var newPos = pos + dir.move
 
-            when (dir) {
-                Directions.NONE -> {}
-                Directions.LEFT -> {
-                    if (newPos.first < move.dest * UnitScale){
-                        newPos = Pair(move.dest * UnitScale, newPos.second)
-                        proceedToNextRoutine = true
+                when (dir) {
+                    Directions.NONE -> {}
+                    Directions.LEFT -> {
+                        if (newPos.first < move.dest * UnitScale) {
+                            newPos = Pair(move.dest * UnitScale, newPos.second)
+                            proceedToNextRoutine = true
+                        }
                     }
-                }
-                Directions.UP -> {
-                    if (newPos.second < move.dest * UnitScale){
-                        newPos = Pair(newPos.first, move.dest * UnitScale)
-                        proceedToNextRoutine = true
+
+                    Directions.UP -> {
+                        if (newPos.second < move.dest * UnitScale) {
+                            newPos = Pair(newPos.first, move.dest * UnitScale)
+                            proceedToNextRoutine = true
+                        }
+                    }
+
+                    Directions.RIGHT -> {
+                        if (newPos.first > move.dest * UnitScale) {
+                            newPos = Pair(move.dest * UnitScale, newPos.second)
+                            proceedToNextRoutine = true
+                        }
+                    }
+
+                    Directions.DOWN -> {
+                        if (newPos.second > move.dest * UnitScale) {
+                            newPos = Pair(newPos.first, move.dest * UnitScale)
+                            proceedToNextRoutine = true
+                        }
                     }
                 }
 
-                Directions.RIGHT -> {
-                    if (newPos.first > move.dest * UnitScale){
-                        newPos = Pair(move.dest * UnitScale, newPos.second)
-                        proceedToNextRoutine = true
-                    }
-                }
-                Directions.DOWN -> {
-                    if (newPos.second > move.dest * UnitScale){
-                        newPos = Pair(newPos.first, move.dest * UnitScale)
-                        proceedToNextRoutine = true
-                    }
-                }
-            }
-
-            updateActor(
-                ActorUpdateInfo(
-                    position = newPos,
-                    tilePos = actor.tilePos,
-                    lastGoodTilePos = actor.lastGoodTilePos,
-                    direction = actor.direction,
-                    lastActiveDir = actor.lastActiveDir,
-                    nextDir = actor.nextDir,
-                    physicalSpeed = actor.physicalSpeed,
-                    speed = actor.speed,
-                    fullSpeed = actor.fullSpeed,
-                    tunnelSpeed = actor.tunnelSpeed
+                updateActor(
+                    ActorUpdateInfo(
+                        position = newPos,
+                        tilePos = actor.tilePos,
+                        lastGoodTilePos = actor.lastGoodTilePos,
+                        direction = actor.direction,
+                        lastActiveDir = actor.lastActiveDir,
+                        nextDir = actor.nextDir,
+                        physicalSpeed = actor.physicalSpeed,
+                        speed = actor.speed,
+                        fullSpeed = actor.fullSpeed,
+                        tunnelSpeed = actor.tunnelSpeed
+                    )
                 )
-            )
+            }
         }
     }
 

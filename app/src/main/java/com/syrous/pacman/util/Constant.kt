@@ -292,3 +292,6 @@ val CAGE_ENTRANCE_TILE = Pair(16, 12)
  val ghostModeSwitchTimes: DoubleArray = doubleArrayOf(7.0, 20.0, 7.0, 20.0, 5.0, 20.0, 5.0, 1.0, )
  const val penForceTime = 4
  val penLeavingLimits: DoubleArray = doubleArrayOf(0.0, 0.0, 30.0, 60.0,)
+
+const val LEAVING_SPEED = 0.8f * 0.4f
+const val IN_CAGE_SPEED = 0.8f * 0.3f

@@ -9,6 +9,8 @@ import com.syrous.pacman.model.Inky
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toInky
+import com.syrous.pacman.util.IN_CAGE_SPEED
+import com.syrous.pacman.util.LEAVING_SPEED
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.ghostSpeed
 import com.syrous.pacman.util.ghostTunnelSpeed
@@ -38,21 +40,21 @@ class InkyController(private val gameState: GameState) : GhostController(gameSta
         put(
             GhostMode.RE_LEAVING_CAGE,
             listOf(
-                MoveInCage(14.5f, 15f, Directions.UP, 3f, 1.6f),
-                MoveInCage(14.5f, 12f, Directions.RIGHT, 0.5f, 1.6f)
+                MoveInCage(14.5f, 15f, Directions.UP, 3f, LEAVING_SPEED),
+                MoveInCage(14.5f, 12f, Directions.RIGHT, 0.5f, LEAVING_SPEED)
             )
         )
         put(
             GhostMode.IN_CAGE, listOf(
-                MoveInCage(14f, 15f, Directions.RIGHT, 2f, 0.8f * 0.6f),
-                MoveInCage(16f, 17f, Directions.LEFT, 3f, 0.8f * 0.6f),
-                MoveInCage(13f, 15f, Directions.RIGHT, 1f, 0.8f * 0.6f)
+                MoveInCage(13f, 15f, Directions.RIGHT, 14f, IN_CAGE_SPEED),
+                MoveInCage(14f, 15f, Directions.RIGHT, 16f, IN_CAGE_SPEED),
+                MoveInCage(16f, 15f, Directions.LEFT, 13f, IN_CAGE_SPEED),
             )
         )
         put(
             GhostMode.LEAVING_CAGE, listOf(
-                MoveInCage(14.5f, 15f, Directions.UP, 3f, 1.6f),
-                MoveInCage(14.5f, 12f, Directions.RIGHT, 0.5f, 1.6f)
+                MoveInCage(14.5f, 15f, Directions.UP, 12f, LEAVING_SPEED),
+                MoveInCage(14.5f, 12f, Directions.RIGHT, 15f, LEAVING_SPEED),
             )
         )
         put(
