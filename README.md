@@ -2,7 +2,7 @@
 
 Welcome to Pacman! This is a simple implementation of the classic arcade game Pacman using Jetpack Compose and Android Framework.
 
-![Pacman Gameplay GIF](https://imgur.com/a/UmU8dYG)
+![Pacman Gameplay GIF](https://imgur.com/TcNUjwO)
 
 ## Architecture
 
