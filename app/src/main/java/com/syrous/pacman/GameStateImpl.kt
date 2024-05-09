@@ -26,11 +26,16 @@ import com.syrous.pacman.util.PATHS
 import com.syrous.pacman.util.PATH_WITHOUT_FOOD
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.VERTICAL_WALL_LIST
-import com.syrous.pacman.util.dotEatingFrightSpeed
-import com.syrous.pacman.util.dotEatingSpeed
+import com.syrous.pacman.util.cageForceTime
+import com.syrous.pacman.util.elroyDotsLeftPart1
+import com.syrous.pacman.util.elroyDotsLeftPart2
 import com.syrous.pacman.util.elroySpeedPart1
+import com.syrous.pacman.util.elroySpeedPart2
+import com.syrous.pacman.util.foodEatingFrightSpeed
+import com.syrous.pacman.util.foodEatingSpeed
 import com.syrous.pacman.util.frightTime
 import com.syrous.pacman.util.ghostModeSwitchTimes
+import com.syrous.pacman.util.ghostSpeed
 import com.syrous.pacman.util.playerFrightSpeed
 import com.syrous.pacman.util.playerSpeed
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -58,12 +63,14 @@ class GameStateImpl : GameState {
     private val intervalSpeedTable = mutableMapOf<Float, BooleanArray>()
     private var DEFAULT_FPS = 0
     private var currentPlayerSpeed = 0f
-    private var currentDotEatingSpeed = 0f
+    private var currentFoodEatingSpeed = 0f
     private var level = 0
     private var lives = 0
     private var frightModeTime = 0.0
     private var ghostModeTime = 0.0
+    private var forceLeaveCageTime = 0
     private var ghostModeSwitchPos = 0
+    private var cruiseElroySpeed = 0f
 
     private val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
     private val pacmanController: PacmanController = PacmanControllerImpl(this) { gameInternalEvent ->
@@ -104,7 +111,6 @@ class GameStateImpl : GameState {
         intervalTime = 0
         ghostModeSwitchPos = 0
         ghostModeTime = ghostModeSwitchTimes[0] * DEFAULT_FPS
-        Timber.d("ghostModeTime init -> $ghostModeTime")
     }
 
     override fun updateScreenDimensions(width: Int, height: Int) {
@@ -117,6 +123,7 @@ class GameStateImpl : GameState {
             preparePaths()
             prepareAllowedDirections()
             createPlayFieldElements()
+            resetForceCageLeaveTime()
         }
     }
 
@@ -292,12 +299,12 @@ class GameStateImpl : GameState {
             when (mode) {
                 CHASING, PATROLLING -> {
                     currentPlayerSpeed = playerSpeed * 0.8f
-                    currentDotEatingSpeed = dotEatingSpeed * 0.8f
+                    currentFoodEatingSpeed = foodEatingSpeed * 0.8f
                 }
 
                 FLEEING -> {
                     currentPlayerSpeed = playerFrightSpeed * 0.8f
-                    currentDotEatingSpeed = dotEatingFrightSpeed * 0.8f
+                    currentFoodEatingSpeed = foodEatingFrightSpeed * 0.8f
                     modeScoreMultiplier = 1
                 }
 
@@ -331,7 +338,7 @@ class GameStateImpl : GameState {
                 }
             }
             pacmanController.setFullSpeed(currentPlayerSpeed)
-            pacmanController.setDotEatingSpeed(currentDotEatingSpeed)
+            pacmanController.setDotEatingSpeed(currentFoodEatingSpeed)
             pacmanController.changeCurrentSpeed()
         }
     }
@@ -425,10 +432,10 @@ class GameStateImpl : GameState {
     override fun handleTimers() {
         handleGamePlayModeTimer()
         handleGhostModeTimer()
+        handleForceLeaveCageTimer()
     }
 
     private fun handleGhostModeTimer() {
-        Timber.d("ghostModeTime -> $ghostModeTime")
         if(frightModeTime != 0.0) {
             frightModeTime -= 1
             if (frightModeTime <= 0) {
@@ -437,7 +444,6 @@ class GameStateImpl : GameState {
             }
         } else if(ghostModeTime > 0) {
             ghostModeTime -= 1
-            Timber.d("ghostModeTime -> $ghostModeTime")
             if(ghostModeTime <= 0) {
                 ghostModeTime = 0.0
                 ghostModeSwitchPos += 1
@@ -452,9 +458,30 @@ class GameStateImpl : GameState {
             }
         }
     }
+
     private fun finishFrightMode() {
         switchMainGhostMode(lastMainGhostMode, false)
     }
+
+    private fun handleForceLeaveCageTimer() {
+        if (forceLeaveCageTime != 0) {
+            forceLeaveCageTime -= 1
+            if (forceLeaveCageTime <= 0) {
+                for (i in 1..3) {
+                    if (ghostControllerList[i].getGhostMode() == GhostMode.IN_CAGE) {
+                        ghostControllerList[i].setFreeToLeaveCage(true)
+                        break
+                    }
+                }
+                resetForceCageLeaveTime()
+            }
+        }
+    }
+
+    private fun resetForceCageLeaveTime() {
+        forceLeaveCageTime = cageForceTime * DEFAULT_FPS
+    }
+
     private fun handleGamePlayModeTimer() {
         when (gamePlayMode) {
             GamePlayMode.GHOST_DIED -> {}
@@ -501,18 +528,21 @@ class GameStateImpl : GameState {
 
 
     private fun updateScore(food: Food) {
-        foodEaten = score.value
+        foodEaten += 1
+        var newScore = score.value
         when(food) {
             Food.NONE -> {}
             Food.PELLET -> {
-                foodEaten += 10
+                newScore += 10
             }
             Food.ENERGIZER -> {
                 switchMainGhostMode(FLEEING, false)
-                foodEaten += 50
+                newScore += 50
             }
         }
-        score.value = foodEaten
+        updateCruiseElroySpeed()
+        resetForceCageLeaveTime()
+        score.value = newScore
     }
 
     private fun haveFood(playFieldTile: Pair<Int, Int>) {
@@ -525,6 +555,21 @@ class GameStateImpl : GameState {
         listOfAvailableFood[playFieldTile.first * adjustedScaleFactorX]!!.remove(playFieldTile.second * adjustedScaleFactorY)
         pacmanController.updatePlayField(playField)
         foodList.value = listOfAvailableFood
+    }
+
+     override fun updateCruiseElroySpeed() {
+        var speed = ghostSpeed * 0.8f
+        if (clydeController.getGhostMode() != GhostMode.IN_CAGE) {
+            if (totalFood - foodEaten < elroyDotsLeftPart2) {
+                speed = elroySpeedPart2 * 0.8f
+            } else if (totalFood - foodEaten < elroyDotsLeftPart1) {
+                speed = elroySpeedPart1 * 0.8f
+            }
+        }
+        if (speed != cruiseElroySpeed) {
+            cruiseElroySpeed = speed
+            blinkyController.changeCurrentSpeed() // update the speed of Blinky.
+        }
     }
 
     override fun pauseGame() {

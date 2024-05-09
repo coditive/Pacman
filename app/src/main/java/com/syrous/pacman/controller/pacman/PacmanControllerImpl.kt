@@ -12,7 +12,7 @@ import com.syrous.pacman.model.Pacman
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toPacman
 import com.syrous.pacman.util.UnitScale
-import com.syrous.pacman.util.dotEatingSpeed
+import com.syrous.pacman.util.foodEatingSpeed
 import com.syrous.pacman.util.minus
 import com.syrous.pacman.util.playerSpeed
 import com.syrous.pacman.util.plus
@@ -62,7 +62,7 @@ class PacmanControllerImpl(
             physicalSpeed = 0f,
             fullSpeed = playerSpeed,
             tunnelSpeed = playerSpeed,
-            dotEatingSpeed = dotEatingSpeed
+            dotEatingSpeed = foodEatingSpeed
         )
         pacman.value = Pacman(
             position = Pair(14f * UnitScale, 24f * UnitScale),
@@ -76,7 +76,7 @@ class PacmanControllerImpl(
             physicalSpeed = 0f,
             fullSpeed = playerSpeed,
             tunnelSpeed = playerSpeed,
-            dotEatingSpeed = dotEatingSpeed
+            dotEatingSpeed = foodEatingSpeed
         )
     }
 

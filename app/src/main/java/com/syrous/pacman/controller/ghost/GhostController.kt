@@ -54,14 +54,23 @@ abstract class GhostController(
                     switchGhostMode(
                         if (eatenInFrightenedMode) GhostMode.RE_LEAVING_CAGE else GhostMode.LEAVING_CAGE,
                     )
+                    return
                 }
 
                 mode == GhostMode.LEAVING_CAGE || mode == GhostMode.RE_LEAVING_CAGE -> {
                     var ghostMode = gameState.getMainGhostMain()
+                    val oldActor = actor as Ghost
+                    actor = when(oldActor) {
+                        is Blinky -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                        is Clyde -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                        is Inky -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                        is Pinky -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                    }
                     if (mode == GhostMode.RE_LEAVING_CAGE && ghostMode == GhostMode.FLEEING) {
                         ghostMode = gameState.getLastMainGhostMode()
                     }
                     switchGhostMode(ghostMode)
+                    return
                 }
 
                 mode == GhostMode.ENTERING_CAGE -> {
@@ -71,6 +80,7 @@ abstract class GhostController(
                         eatenInFrightenedMode = true
                         switchGhostMode(GhostMode.IN_CAGE)
                     }
+                    return
                 }
 
                 else -> {
@@ -108,59 +118,66 @@ abstract class GhostController(
             move = getMovesInCage()[routineMoveId]
         }
         if (move != null) {
-            val dir = actor.direction
-            val pos = actor.position
-            var newPos = pos + dir.move
+            if (intervalSpeedTable[gameState.getIntervalTime()]) {
+                val dir = actor.direction
+                val pos = actor.position
+                var newPos = pos + dir.move
 
-            when (dir) {
-                Directions.NONE -> {}
-                Directions.LEFT -> {
-                    if (newPos.first < move.dest * UnitScale){
-                        newPos = Pair(move.dest * UnitScale, newPos.second)
-                        proceedToNextRoutine = true
+                when (dir) {
+                    Directions.NONE -> {}
+                    Directions.LEFT -> {
+                        if (newPos.first < move.dest * UnitScale) {
+                            newPos = Pair(move.dest * UnitScale, newPos.second)
+                            proceedToNextRoutine = true
+                        }
                     }
-                }
-                Directions.UP -> {
-                    if (newPos.second < move.dest * UnitScale){
-                        newPos = Pair(newPos.first, move.dest * UnitScale)
-                        proceedToNextRoutine = true
+
+                    Directions.UP -> {
+                        if (newPos.second < move.dest * UnitScale) {
+                            newPos = Pair(newPos.first, move.dest * UnitScale)
+                            proceedToNextRoutine = true
+                        }
+                    }
+
+                    Directions.RIGHT -> {
+                        if (newPos.first > move.dest * UnitScale) {
+                            newPos = Pair(move.dest * UnitScale, newPos.second)
+                            proceedToNextRoutine = true
+                        }
+                    }
+
+                    Directions.DOWN -> {
+                        if (newPos.second > move.dest * UnitScale) {
+                            newPos = Pair(newPos.first, move.dest * UnitScale)
+                            proceedToNextRoutine = true
+                        }
                     }
                 }
 
-                Directions.RIGHT -> {
-                    if (newPos.first > move.dest * UnitScale){
-                        newPos = Pair(move.dest * UnitScale, newPos.second)
-                        proceedToNextRoutine = true
-                    }
-                }
-                Directions.DOWN -> {
-                    if (newPos.second > move.dest * UnitScale){
-                        newPos = Pair(newPos.first, move.dest * UnitScale)
-                        proceedToNextRoutine = true
-                    }
-                }
-            }
-
-            updateActor(
-                ActorUpdateInfo(
-                    position = newPos,
-                    tilePos = actor.tilePos,
-                    lastGoodTilePos = actor.lastGoodTilePos,
-                    direction = actor.direction,
-                    lastActiveDir = actor.lastActiveDir,
-                    nextDir = actor.nextDir,
-                    physicalSpeed = actor.physicalSpeed,
-                    speed = actor.speed,
-                    fullSpeed = actor.fullSpeed,
-                    tunnelSpeed = actor.tunnelSpeed
+                updateActor(
+                    ActorUpdateInfo(
+                        position = newPos,
+                        tilePos = actor.tilePos,
+                        lastGoodTilePos = actor.lastGoodTilePos,
+                        direction = actor.direction,
+                        lastActiveDir = actor.lastActiveDir,
+                        nextDir = actor.nextDir,
+                        physicalSpeed = actor.physicalSpeed,
+                        speed = actor.speed,
+                        fullSpeed = actor.fullSpeed,
+                        tunnelSpeed = actor.tunnelSpeed
+                    )
                 )
-            )
+            }
         }
     }
 
     fun switchGhostMode(mode: GhostMode) {
         val oldMode = this.mode
         this.mode = mode
+        if(actor is Clyde || (mode == GhostMode.IN_CAGE && oldMode == GhostMode.IN_CAGE)) {
+            gameState.updateCruiseElroySpeed()
+        }
         when (oldMode) {
             GhostMode.NONE,
             GhostMode.PATROLLING,
@@ -298,6 +315,10 @@ abstract class GhostController(
 
     fun setModeChangedWhileInCage(change: Boolean) {
         ghostModeChangedInCage = change
+    }
+
+    fun setFreeToLeaveCage(toLeave: Boolean) {
+        freeToExitCage = toLeave
     }
 
     fun getGhostMode(): GhostMode = mode

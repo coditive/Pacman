@@ -9,6 +9,7 @@ import com.syrous.pacman.model.GhostMode
 import com.syrous.pacman.model.MoveInCage
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.model.toBlinky
+import com.syrous.pacman.util.LEAVING_SPEED
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.ghostSpeed
 import com.syrous.pacman.util.ghostTunnelSpeed
@@ -35,14 +36,14 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
     private val MOVES_IN_CAGE = mutableMapOf<GhostMode, List<MoveInCage>>().apply {
         put(
             GhostMode.RE_LEAVING_CAGE, listOf(
-                MoveInCage(14.5f, 15f, Directions.UP, 3f, 1.6f),
-                MoveInCage(14.5f, 12f, Directions.LEFT, 0.5f, 1.6f)
+                MoveInCage(14.5f, 15f, Directions.UP, 12f, LEAVING_SPEED),
+                MoveInCage(14.5f, 12f, Directions.LEFT, 14f, LEAVING_SPEED),
             )
         )
         put(
             GhostMode.ENTERING_CAGE, listOf(
-                MoveInCage(14f, 12f, Directions.RIGHT, 0.5f, 0.8f * 0.6f),
-                MoveInCage(14.5f, 12f, Directions.DOWN, 3f, 0.8f * 0.6f)
+                MoveInCage(14f, 12f, Directions.RIGHT, 14.5f, 0.8f * 0.6f),
+                MoveInCage(14.5f, 12f, Directions.DOWN, 15f, 0.8f * 0.6f)
             )
         )
     }

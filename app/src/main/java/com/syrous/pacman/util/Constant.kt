@@ -271,16 +271,16 @@ val ENERGIZER_POSITION = listOf(
     Pair(27, 30)
 )
 
-val CAGE_ENTRANCE_TILE = Pair(16, 12)
+val CAGE_ENTRANCE_TILE = Pair(14f, 12f)
 
 
  const val ghostSpeed = 0.75f
  const val ghostTunnelSpeed = 0.4f
  const val playerSpeed = 0.8f
- const val dotEatingSpeed = 0.71f
+ const val foodEatingSpeed = 0.71f
  const val ghostFrightSpeed = 0.5f
  const val playerFrightSpeed = 0.9f
- const val dotEatingFrightSpeed = 0.79f
+ const val foodEatingFrightSpeed = 0.79f
  const val elroyDotsLeftPart1 = 20
  const val elroySpeedPart1 = 0.8f
  const val elroyDotsLeftPart2 = 10
@@ -290,5 +290,8 @@ val CAGE_ENTRANCE_TILE = Pair(16, 12)
  const val fruit = 1
  const val fruitScore = 100
  val ghostModeSwitchTimes: DoubleArray = doubleArrayOf(7.0, 20.0, 7.0, 20.0, 5.0, 20.0, 5.0, 1.0, )
- const val penForceTime = 4
- val penLeavingLimits: DoubleArray = doubleArrayOf(0.0, 0.0, 30.0, 60.0,)
+ const val cageForceTime = 4
+ val cageLeavingLimits: DoubleArray = doubleArrayOf(0.0, 0.0, 30.0, 60.0,)
+
+const val LEAVING_SPEED = 0.8f * 0.4f
+const val IN_CAGE_SPEED = 0.8f * 0.3f
