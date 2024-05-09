@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.syrous.pacman.GameState
 import com.syrous.pacman.R
+import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.model.Ghost
 import com.syrous.pacman.model.Pacman
@@ -153,7 +155,10 @@ class GamePlay(
         val inky = gameState.inky.collectAsState().value
         val clyde = gameState.clyde.collectAsState().value
 
-        Log.d("GamePlayScreen", "pacman -> $pacman, blinky -> $blinky, pinky -> $pinky, inky -> $inky, clyde -> $clyde")
+        Log.d(
+            "GamePlayScreen",
+            "pacman -> $pacman, blinky -> $blinky, pinky -> $pinky, inky -> $inky, clyde -> $clyde"
+        )
 
         val animatableCutAngle = remember {
             Animatable(CutAngle)
@@ -169,10 +174,10 @@ class GamePlay(
         }
 
         Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
-                gameState.updateScreenDimensions(
-                    coordinates.size.width, coordinates.size.height
-                )
-            }) {
+            gameState.updateScreenDimensions(
+                coordinates.size.width, coordinates.size.height
+            )
+        }) {
             drawCircleWithCutout(
                 color = pacmanColor!!,
                 radius = PacmanRadius,
@@ -216,18 +221,48 @@ class GamePlay(
     }
 
     private fun DrawScope.drawGhost(ghost: Ghost, ghostImage: ImageBitmap) {
-        rotate(
-            degrees = 0f,
-            pivot = Offset(
-                ghost.screenPos.first, ghost.screenPos.second
-            )
+        val scaleFactor = when (ghost.direction) {
+            Directions.NONE -> {
+                when (ghost.lastActiveDir) {
+                    Directions.LEFT -> -1f
+                    else -> 1f
+                }
+            }
+
+            Directions.LEFT -> -1f
+
+            Directions.RIGHT -> 1f
+
+            Directions.UP -> {
+                when (ghost.lastActiveDir) {
+                    Directions.LEFT -> -1f
+                    else -> 1f
+                }
+            }
+
+            Directions.DOWN -> {
+                when (ghost.lastActiveDir) {
+                    Directions.LEFT -> -1f
+                    else -> 1f
+                }
+            }
+        }
+        withTransform(
+            transformBlock = {
+                translate(0f, 0f)
+                scale(
+                    1f * scaleFactor,
+                    1f,
+                    pivot = Offset(GhostSize.toFloat() / 2, GhostSize.toFloat() / 2)
+                )
+            },
         ) {
             drawImage(
                 image = ghostImage,
                 srcOffset = IntOffset.Zero,
                 srcSize = IntSize(ghostImage.width, ghostImage.height),
                 dstOffset = IntOffset(
-                    ghost.screenPos.first.toInt() - GhostSize / 2,
+                    (ghost.screenPos.first.toInt() - GhostSize / 2) * scaleFactor.toInt(),
                     ghost.screenPos.second.toInt() - GhostSize / 2
                 ),
                 dstSize = IntSize(GhostSize, GhostSize),

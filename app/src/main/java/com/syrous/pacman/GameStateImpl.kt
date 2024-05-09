@@ -285,7 +285,6 @@ class GameStateImpl : GameState {
     }
 
     private fun switchMainGhostMode(mode: GhostMode, justRestartGame: Boolean) {
-        Timber.d("SwitchMainGhostMode changed => $mode")
         if (mode == FLEEING && frightTime == 0) {
             for (ghost in ghostControllerList) {
                 ghost.setReverseDirectionNext(true) // If frightTime is 0, a frightened ghost only reverse its direction.
