@@ -18,6 +18,7 @@ import com.syrous.pacman.util.CAGE_ENTRANCE_TILE
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.getEuclideanDistanceBetweenFloat
 import com.syrous.pacman.util.plus
+import timber.log.Timber
 
 abstract class GhostController(
     private val gameState: GameState
@@ -54,6 +55,7 @@ abstract class GhostController(
                     switchGhostMode(
                         if (eatenInFrightenedMode) GhostMode.RE_LEAVING_CAGE else GhostMode.LEAVING_CAGE,
                     )
+                    return
                 }
 
                 mode == GhostMode.LEAVING_CAGE || mode == GhostMode.RE_LEAVING_CAGE -> {
@@ -62,6 +64,7 @@ abstract class GhostController(
                         ghostMode = gameState.getLastMainGhostMode()
                     }
                     switchGhostMode(ghostMode)
+                    return
                 }
 
                 mode == GhostMode.ENTERING_CAGE -> {
@@ -71,6 +74,7 @@ abstract class GhostController(
                         eatenInFrightenedMode = true
                         switchGhostMode(GhostMode.IN_CAGE)
                     }
+                    return
                 }
 
                 else -> {
@@ -302,6 +306,11 @@ abstract class GhostController(
 
     fun setModeChangedWhileInCage(change: Boolean) {
         ghostModeChangedInCage = change
+    }
+
+    fun setFreeToLeaveCage(toLeave: Boolean) {
+        Timber.d("freeToExitCage => $toLeave")
+        freeToExitCage = toLeave
     }
 
     fun getGhostMode(): GhostMode = mode
