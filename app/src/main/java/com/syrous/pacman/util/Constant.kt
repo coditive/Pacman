@@ -271,7 +271,7 @@ val ENERGIZER_POSITION = listOf(
     Pair(27, 30)
 )
 
-val CAGE_ENTRANCE_TILE = Pair(16, 12)
+val CAGE_ENTRANCE_TILE = Pair(14f, 12f)
 
 
  const val ghostSpeed = 0.75f

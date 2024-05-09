@@ -18,7 +18,6 @@ import com.syrous.pacman.util.CAGE_ENTRANCE_TILE
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.getEuclideanDistanceBetweenFloat
 import com.syrous.pacman.util.plus
-import timber.log.Timber
 
 abstract class GhostController(
     private val gameState: GameState
@@ -60,6 +59,13 @@ abstract class GhostController(
 
                 mode == GhostMode.LEAVING_CAGE || mode == GhostMode.RE_LEAVING_CAGE -> {
                     var ghostMode = gameState.getMainGhostMain()
+                    val oldActor = actor as Ghost
+                    actor = when(oldActor) {
+                        is Blinky -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                        is Clyde -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                        is Inky -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                        is Pinky -> oldActor.copy(position = Pair(CAGE_ENTRANCE_TILE.first * UnitScale, CAGE_ENTRANCE_TILE.second * UnitScale))
+                    }
                     if (mode == GhostMode.RE_LEAVING_CAGE && ghostMode == GhostMode.FLEEING) {
                         ghostMode = gameState.getLastMainGhostMode()
                     }
@@ -169,6 +175,9 @@ abstract class GhostController(
     fun switchGhostMode(mode: GhostMode) {
         val oldMode = this.mode
         this.mode = mode
+        if(actor is Clyde || (mode == GhostMode.IN_CAGE && oldMode == GhostMode.IN_CAGE)) {
+            gameState.updateCruiseElroySpeed()
+        }
         when (oldMode) {
             GhostMode.NONE,
             GhostMode.PATROLLING,
@@ -309,7 +318,6 @@ abstract class GhostController(
     }
 
     fun setFreeToLeaveCage(toLeave: Boolean) {
-        Timber.d("freeToExitCage => $toLeave")
         freeToExitCage = toLeave
     }
 

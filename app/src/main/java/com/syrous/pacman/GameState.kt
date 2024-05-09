@@ -46,5 +46,6 @@ interface GameState {
     fun getMainGhostMain(): GhostMode
     fun getLastMainGhostMode(): GhostMode
     fun getGamePlayMode(): GamePlayMode
+    fun updateCruiseElroySpeed()
     fun getCruiseElroySpeed(): Float
 }
