@@ -1,22 +1,23 @@
 package com.syrous.pacman.screen
 
-import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.Button
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,30 +28,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowInsetsCompat
 import com.syrous.pacman.GameState
 import com.syrous.pacman.R
-import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
-import com.syrous.pacman.model.Ghost
-import com.syrous.pacman.model.Pacman
-import com.syrous.pacman.ui.theme.GameControlActionButtonScheme
-import com.syrous.pacman.ui.theme.PressStartFontFamily
 import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
 import com.syrous.pacman.util.EnergizerRadius
 import com.syrous.pacman.util.FoodRadius
-import com.syrous.pacman.util.GhostSize
 import com.syrous.pacman.util.PacmanRadius
 
 sealed class GamePlayScreenAction {
@@ -81,43 +75,146 @@ class GamePlay(
 
     @Composable
     fun Screen(modifier: Modifier = Modifier) {
+        val view = LocalView.current
+        val windowInsets = WindowInsetsCompat.toWindowInsetsCompat(view.rootWindowInsets)
+        val statusBarHeight =
+            with(LocalDensity.current) { windowInsets.getInsets(WindowInsetsCompat.Type.statusBars()).top.toDp() }
+        val navigationBarHeight = with(LocalDensity.current) {
+            windowInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).top.toDp()
+        }
+
         Initialize()
-        Scaffold(modifier = modifier.fillMaxSize(), topBar = {
-            val score = gameState.score.collectAsState().value
-            Text(text = "Your Score: $score", fontFamily = PressStartFontFamily)
-        }) { paddingValues ->
-
-            val isPause = gameState.isPaused.collectAsState().value
-            PacmanPlayer(
+        Scaffold(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(
+                    top = statusBarHeight,
+                    bottom = navigationBarHeight + 10.dp
+                ),
+            topBar = {
+                PacmanGameTopBar()
+            },
+        ) { paddingValues ->
+            GameLayout(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(.7f)
-                    .border(width = 1.dp, color = Color.Gray)
                     .padding(paddingValues)
-            )
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .pointerInput(Unit) {
+                        detectTransformGestures { _, pan, _, _ ->
+                            when {
+                                pan.x > 0 -> {
+                                    performAction(GamePlayScreenAction.MoveRight)
+                                }
 
-            PacmanController(
+                                pan.x < 0 -> {
+                                    performAction(GamePlayScreenAction.MoveLeft)
+                                }
+
+                                pan.y > 0 -> {
+                                    performAction(GamePlayScreenAction.MoveDown)
+                                }
+
+                                pan.y < 0 -> {
+                                    performAction(GamePlayScreenAction.MoveUp)
+                                }
+                            }
+                        }
+                    }
+            )
+        }
+    }
+
+
+    @Composable
+    fun PacmanGameTopBar(modifier: Modifier = Modifier) {
+        val score = gameState.score.collectAsState().value
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .padding(start = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Column(
+                modifier = modifier.wrapContentSize(),
+            ) {
+                Text(
+                    text = "1UP",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+
+            Column(
+                modifier = Modifier.wrapContentSize(), verticalArrangement = Arrangement.Bottom
+            ) {
+                Spacer(modifier = modifier.size(24.dp))
+                Text(
+                    text = score.toString(),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+
+            Column(
+                modifier = modifier.wrapContentSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "High Score",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                Spacer(modifier = modifier.size(8.dp))
+
+                Text(
+                    text = "16400",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    style = MaterialTheme.typography.titleSmall
+                )
+            }
+        }
+    }
+
+    @Composable
+    fun GameLayout(modifier: Modifier = Modifier) {
+        Column(modifier = modifier) {
+            Box(
                 modifier = Modifier
+                    .weight(5f)
                     .fillMaxWidth()
                     .wrapContentHeight()
-                    .padding(paddingValues),
-                performAction = performAction,
-                pauseState = isPause
+            ) {
+                GameWalls(modifier = modifier)
+                GamePlayFieldLayout(modifier = modifier)
+                GameActorComposable(modifier = modifier)
+            }
+            GameBottomLayout(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .wrapContentHeight()
             )
         }
     }
 
     @Composable
-    fun PacmanPlayer(modifier: Modifier = Modifier) {
-        Box(modifier = modifier) {
-            PacmanGameWalls(modifier = Modifier.fillMaxSize())
-            PacmanScreenLayout(modifier = Modifier.fillMaxSize())
-            PacmanActorComposable(modifier = Modifier.fillMaxSize())
+    fun GameBottomLayout(modifier: Modifier = Modifier) {
+        Row(modifier = modifier.padding(start = 20.dp, end = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+            val lives = gameState.lives.collectAsState().value
+            Row(modifier = Modifier.wrapContentSize()) {
+                for(life in 1..lives) {
+                    Image(painter = painterResource(id = R.drawable.pacman), contentDescription = "", modifier = Modifier.size(24.dp))
+                }
+            }
+            Image(painter = painterResource(id = R.drawable.ghost_blinky), contentDescription = "", modifier = Modifier.size(24.dp))
         }
     }
 
     @Composable
-    private fun PacmanGameWalls(modifier: Modifier = Modifier) {
+    fun GameWalls(modifier: Modifier = Modifier) {
         val vGameWalls = gameState.vWallList.collectAsState().value
         val hGameWalls = gameState.hWallList.collectAsState().value
         Canvas(modifier = modifier) {
@@ -146,17 +243,12 @@ class GamePlay(
     }
 
     @Composable
-    private fun PacmanActorComposable(modifier: Modifier = Modifier) {
+    fun GameActorComposable(modifier: Modifier = Modifier) {
         val pacman = gameState.pacman.collectAsState().value
         val blinky = gameState.blinky.collectAsState().value
         val pinky = gameState.pinky.collectAsState().value
         val inky = gameState.inky.collectAsState().value
         val clyde = gameState.clyde.collectAsState().value
-
-        Log.d(
-            "GamePlayScreen",
-            "pacman -> $pacman, blinky -> $blinky, pinky -> $pinky, inky -> $inky, clyde -> $clyde"
-        )
 
         val animatableCutAngle = remember {
             Animatable(CutAngle)
@@ -171,11 +263,7 @@ class GamePlay(
             })
         }
 
-        Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
-            gameState.updateScreenDimensions(
-                coordinates.size.width, coordinates.size.height
-            )
-        }) {
+        Canvas(modifier = modifier) {
             drawCircleWithCutout(
                 color = pacmanColor!!,
                 radius = PacmanRadius,
@@ -191,7 +279,7 @@ class GamePlay(
     }
 
     @Composable
-    private fun PacmanScreenLayout(modifier: Modifier = Modifier) {
+    private fun GamePlayFieldLayout(modifier: Modifier = Modifier) {
         val foodList = gameState.foodList.collectAsState().value
 
         Canvas(modifier = modifier.onGloballyPositioned { coordinates ->
@@ -214,140 +302,6 @@ class GamePlay(
                         x.toFloat(), y.toFloat()
                     )
                 )
-            }
-        }
-    }
-
-    private fun DrawScope.drawGhost(ghost: Ghost, ghostImage: ImageBitmap) {
-        val scaleFactor = when (ghost.direction) {
-            Directions.NONE -> {
-                when (ghost.lastActiveDir) {
-                    Directions.LEFT -> -1f
-                    else -> 1f
-                }
-            }
-
-            Directions.LEFT -> -1f
-
-            Directions.RIGHT -> 1f
-
-            Directions.UP -> {
-                when (ghost.lastActiveDir) {
-                    Directions.LEFT -> -1f
-                    else -> 1f
-                }
-            }
-
-            Directions.DOWN -> {
-                when (ghost.lastActiveDir) {
-                    Directions.LEFT -> -1f
-                    else -> 1f
-                }
-            }
-        }
-        withTransform(
-            transformBlock = {
-                translate(0f, 0f)
-                scale(
-                    1f * scaleFactor,
-                    1f,
-                    pivot = Offset(GhostSize.toFloat() / 2, GhostSize.toFloat() / 2)
-                )
-            },
-        ) {
-            drawImage(
-                image = ghostImage,
-                srcOffset = IntOffset.Zero,
-                srcSize = IntSize(ghostImage.width, ghostImage.height),
-                dstOffset = IntOffset(
-                    (ghost.screenPos.first.toInt() - GhostSize / 2) * scaleFactor.toInt(),
-                    ghost.screenPos.second.toInt() - GhostSize / 2
-                ),
-                dstSize = IntSize(GhostSize, GhostSize),
-            )
-        }
-    }
-
-    private fun DrawScope.drawCircleWithCutout(
-        color: Color, radius: Float, animatedCutAngle: Float, pacman: Pacman
-    ) {
-        rotate(
-            degrees = pacman.lastActiveDir.angle, pivot = Offset(
-                pacman.screenPos.first, pacman.screenPos.second
-            )
-        ) {
-            drawArc(
-                color = color,
-                startAngle = animatedCutAngle,
-                sweepAngle = 360f - 2 * animatedCutAngle,
-                topLeft = Offset(
-                    pacman.screenPos.first - radius, pacman.screenPos.second - radius
-                ),
-                size = Size(radius * 2, radius * 2),
-                useCenter = true,
-            )
-        }
-    }
-
-
-    @Composable
-    fun PacmanController(
-        modifier: Modifier = Modifier,
-        performAction: (GamePlayScreenAction) -> Unit,
-        pauseState: Boolean
-    ) {
-        Column(
-            modifier
-                .fillMaxWidth()
-                .fillMaxHeight(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Bottom
-        ) {
-            Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(onClick = { performAction(GamePlayScreenAction.MoveUp) }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_arrow_upward_24),
-                        contentDescription = ""
-                    )
-                }
-            }
-            Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(onClick = { performAction(GamePlayScreenAction.MoveLeft) }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_arrow_back_24),
-                        contentDescription = ""
-                    )
-                }
-
-                Button(onClick = { performAction(GamePlayScreenAction.MoveRight) }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_arrow_forward_24),
-                        contentDescription = ""
-                    )
-                }
-            }
-            Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                Button(onClick = { performAction(GamePlayScreenAction.MoveDown) }) {
-                    Image(
-                        painter = painterResource(id = R.drawable.baseline_arrow_downward_24),
-                        contentDescription = ""
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Button(
-                    onClick = {
-                        if (pauseState) {
-                            performAction(GamePlayScreenAction.ResumeGame)
-                        } else performAction(GamePlayScreenAction.PauseGame)
-                    }, colors = GameControlActionButtonScheme
-                ) {
-                    val string = if (pauseState) "Resume Game" else "Pause Game"
-                    Text(text = string)
-                }
             }
         }
     }

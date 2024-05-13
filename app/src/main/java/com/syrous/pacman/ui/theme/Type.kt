@@ -71,7 +71,7 @@ val Typography = Typography(
     ),
     titleSmall = TextStyle(
         fontFamily = PressStartFontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Normal,
         fontSize = 16.sp
     ),
     bodyLarge = TextStyle(
