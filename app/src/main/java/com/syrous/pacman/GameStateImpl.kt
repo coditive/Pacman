@@ -41,7 +41,6 @@ import com.syrous.pacman.util.playerSpeed
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import timber.log.Timber
 import kotlin.math.floor
 
 class GameStateImpl : GameState {
@@ -65,7 +64,7 @@ class GameStateImpl : GameState {
     private var currentPlayerSpeed = 0f
     private var currentFoodEatingSpeed = 0f
     private var level = 0
-    private var lives = 0
+    override val lives: MutableStateFlow<Int> = MutableStateFlow(0)
     private var frightModeTime = 0.0
     private var ghostModeTime = 0.0
     private var forceLeaveCageTime = 0
@@ -73,11 +72,12 @@ class GameStateImpl : GameState {
     private var cruiseElroySpeed = 0f
 
     private val playField: MutableMap<Int, MutableMap<Int, Tile>> = mutableMapOf()
-    private val pacmanController: PacmanController = PacmanControllerImpl(this) { gameInternalEvent ->
-        when (gameInternalEvent) {
-            is PacmanAteFood -> haveFood(gameInternalEvent.playFieldTile)
+    private val pacmanController: PacmanController =
+        PacmanControllerImpl(this) { gameInternalEvent ->
+            when (gameInternalEvent) {
+                is PacmanAteFood -> haveFood(gameInternalEvent.playFieldTile)
+            }
         }
-    }
     private val blinkyController = BlinkyController(this)
     private val pinkyController = PinkyController(this)
     private val inkyController = InkyController(this)
@@ -100,7 +100,7 @@ class GameStateImpl : GameState {
     override val gameEvent = MutableSharedFlow<GameEvent>()
     override fun startGamePlay() {
         score.value = 0
-        lives = 3
+        lives.value = 3
         level = 0
         currentPlayerSpeed = playerSpeed
         restartGamePlay()
@@ -321,7 +321,8 @@ class GameStateImpl : GameState {
                     ghost.getGhostMode() != GhostMode.LEAVING_CAGE &&
                     ghost.getGhostMode() != GhostMode.RE_LEAVING_CAGE &&
                     ghost.getGhostMode() != GhostMode.ENTERING_CAGE ||
-                    justRestartGame) {
+                    justRestartGame
+                ) {
 
                     // If it is not immediately after restart the game (justRestartGame:false),
                     // a ghost reverse its direction
@@ -399,14 +400,14 @@ class GameStateImpl : GameState {
     }
 
     override fun getSpeedIntervals(speed: Float): BooleanArray {
-        if(intervalSpeedTable.containsKey(speed).not()){
+        if (intervalSpeedTable.containsKey(speed).not()) {
             var distance = 0f
             var lastPos = 0f
             val speedTable = mutableListOf<Boolean>()
-            for(i in 0 until DEFAULT_FPS) {
+            for (i in 0 until DEFAULT_FPS) {
                 distance += speed
                 val pos = floor(distance)
-                if(pos > lastPos) {
+                if (pos > lastPos) {
                     speedTable.add(true)
                     lastPos = pos
                 } else {
@@ -423,7 +424,7 @@ class GameStateImpl : GameState {
     }
 
     override fun updateTargetPosAfterLoop() {
-        for(ghost in ghostControllerList) {
+        for (ghost in ghostControllerList) {
             ghost.updateTargetPos()
         }
     }
@@ -435,18 +436,18 @@ class GameStateImpl : GameState {
     }
 
     private fun handleGhostModeTimer() {
-        if(frightModeTime != 0.0) {
+        if (frightModeTime != 0.0) {
             frightModeTime -= 1
             if (frightModeTime <= 0) {
                 frightModeTime = 0.0
                 finishFrightMode()
             }
-        } else if(ghostModeTime > 0) {
+        } else if (ghostModeTime > 0) {
             ghostModeTime -= 1
-            if(ghostModeTime <= 0) {
+            if (ghostModeTime <= 0) {
                 ghostModeTime = 0.0
                 ghostModeSwitchPos += 1
-                if(ghostModeSwitchPos < ghostModeSwitchTimes.size) {
+                if (ghostModeSwitchPos < ghostModeSwitchTimes.size) {
                     ghostModeTime = ghostModeSwitchTimes[ghostModeSwitchPos] * DEFAULT_FPS
                     when (mainGhostMode) {
                         PATROLLING -> switchMainGhostMode(CHASING, false)
@@ -529,11 +530,12 @@ class GameStateImpl : GameState {
     private fun updateScore(food: Food) {
         foodEaten += 1
         var newScore = score.value
-        when(food) {
+        when (food) {
             Food.NONE -> {}
             Food.PELLET -> {
                 newScore += 10
             }
+
             Food.ENERGIZER -> {
                 switchMainGhostMode(FLEEING, false)
                 newScore += 50
@@ -556,7 +558,7 @@ class GameStateImpl : GameState {
         foodList.value = listOfAvailableFood
     }
 
-     override fun updateCruiseElroySpeed() {
+    override fun updateCruiseElroySpeed() {
         var speed = ghostSpeed * 0.8f
         if (clydeController.getGhostMode() != GhostMode.IN_CAGE) {
             if (totalFood - foodEaten < elroyDotsLeftPart2) {

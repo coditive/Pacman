@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,9 +35,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowInsetsCompat
 import com.syrous.pacman.GameState
+import com.syrous.pacman.R
 import com.syrous.pacman.model.Food
 import com.syrous.pacman.util.CutAngle
 import com.syrous.pacman.util.EatAngle
@@ -86,7 +89,7 @@ class GamePlay(
                 .fillMaxSize()
                 .padding(
                     top = statusBarHeight,
-                    bottom = navigationBarHeight
+                    bottom = navigationBarHeight + 10.dp
                 ),
             topBar = {
                 PacmanGameTopBar()
@@ -177,10 +180,36 @@ class GamePlay(
 
     @Composable
     fun GameLayout(modifier: Modifier = Modifier) {
-        Box(modifier = modifier) {
-            GameWalls(modifier = modifier)
-            GamePlayFieldLayout(modifier = modifier)
-            GameActorComposable(modifier = modifier)
+        Column(modifier = modifier) {
+            Box(
+                modifier = Modifier
+                    .weight(5f)
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            ) {
+                GameWalls(modifier = modifier)
+                GamePlayFieldLayout(modifier = modifier)
+                GameActorComposable(modifier = modifier)
+            }
+            GameBottomLayout(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            )
+        }
+    }
+
+    @Composable
+    fun GameBottomLayout(modifier: Modifier = Modifier) {
+        Row(modifier = modifier.padding(start = 20.dp, end = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+            val lives = gameState.lives.collectAsState().value
+            Row(modifier = Modifier.wrapContentSize()) {
+                for(life in 1..lives) {
+                    Image(painter = painterResource(id = R.drawable.pacman), contentDescription = "", modifier = Modifier.size(24.dp))
+                }
+            }
+            Image(painter = painterResource(id = R.drawable.ghost_blinky), contentDescription = "", modifier = Modifier.size(24.dp))
         }
     }
 

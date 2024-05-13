@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 interface GameState {
 
     val pacman: StateFlow<Pacman>
+    val lives: StateFlow<Int>
     val hWallList: StateFlow<Map<Pair<Float, Float>, Pair<Float, Float>>>
     val vWallList: StateFlow<Map<Pair<Float, Float>, Pair<Float, Float>>>
     val foodList: StateFlow<Map<Int, Map<Int, Food>>>
