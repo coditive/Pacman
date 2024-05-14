@@ -14,7 +14,6 @@ const val EatAngle = 60f
 const val GhostSize = 80
 
 
-
 val PATHS = listOf(
     Path.createVerticalPath(2, 27, 4),
     Path.createVerticalPath(2, 21, 4),
@@ -273,25 +272,30 @@ val ENERGIZER_POSITION = listOf(
 
 val CAGE_ENTRANCE_TILE = Pair(14f, 12f)
 
+val TUNNEL_POSITION = listOf(
+    Pair(1, 15),
+    Pair(29, 15)
+)
 
- const val ghostSpeed = 0.75f
- const val ghostTunnelSpeed = 0.4f
- const val playerSpeed = 0.8f
- const val foodEatingSpeed = 0.71f
- const val ghostFrightSpeed = 0.5f
- const val playerFrightSpeed = 0.9f
- const val foodEatingFrightSpeed = 0.79f
- const val elroyDotsLeftPart1 = 20
- const val elroySpeedPart1 = 0.8f
- const val elroyDotsLeftPart2 = 10
- const val elroySpeedPart2 = 0.85f
- const val frightTime = 6
- const val frightBlinkCount = 5
- const val fruit = 1
- const val fruitScore = 100
- val ghostModeSwitchTimes: DoubleArray = doubleArrayOf(7.0, 20.0, 7.0, 20.0, 5.0, 20.0, 5.0, 1.0, )
- const val cageForceTime = 4
- val cageLeavingLimits: DoubleArray = doubleArrayOf(0.0, 0.0, 30.0, 60.0,)
+
+const val ghostSpeed = 0.75f
+const val ghostTunnelSpeed = 0.4f
+const val playerSpeed = 0.8f
+const val foodEatingSpeed = 0.71f
+const val ghostFrightSpeed = 0.5f
+const val playerFrightSpeed = 0.9f
+const val foodEatingFrightSpeed = 0.79f
+const val elroyDotsLeftPart1 = 20
+const val elroySpeedPart1 = 0.8f
+const val elroyDotsLeftPart2 = 10
+const val elroySpeedPart2 = 0.85f
+const val frightTime = 6
+const val frightBlinkCount = 5
+const val fruit = 1
+const val fruitScore = 100
+val ghostModeSwitchTimes: DoubleArray = doubleArrayOf(7.0, 20.0, 7.0, 20.0, 5.0, 20.0, 5.0, 1.0)
+const val cageForceTime = 4
+val cageLeavingLimits: DoubleArray = doubleArrayOf(0.0, 0.0, 30.0, 60.0)
 
 const val LEAVING_SPEED = 0.8f * 0.4f
 const val IN_CAGE_SPEED = 0.8f * 0.3f

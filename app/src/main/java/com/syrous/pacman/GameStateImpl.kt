@@ -191,7 +191,7 @@ class GameStateImpl : GameState {
             isPath = true,
             isTunnel = tunnel,
             isIntersection = isIntersection,
-            food = if (playField[x]!![y]!!.food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
+            food = if (food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
         )
     }
 
@@ -203,52 +203,32 @@ class GameStateImpl : GameState {
                 val endX = (p.x + p.horizontalLength - 1) * UnitScale
                 val y = p.y * UnitScale
 
-                for (x in (p.x + 1) * UnitScale until endX step UnitScale) {
-                    playField[x]!![y] = prepareTile(x, y, p.tunnel, food = playField[x]!![y]!!.food)
+                for (x in p.x * UnitScale until endX step UnitScale) {
+                    playField[x]!![y] = prepareTile(
+                        x,
+                        y,
+                        tunnel = (!p.tunnel || x != p.x * UnitScale && x != (p.x + p.horizontalLength - 1) * UnitScale) && p.tunnel,
+                        food = playField[x]!![y]!!.food
+                    )
                 }
 
-                playField[startX]!![y] =
-                    prepareTile(
-                        startX,
-                        y,
-                        p.tunnel,
-                        isIntersection = true,
-                        food = playField[startX]!![y]!!.food
-                    )
-
-                playField[endX]!![y] =
-                    prepareTile(
-                        endX,
-                        y,
-                        p.tunnel,
-                        isIntersection = true,
-                        playField[endX]!![y]!!.food
-                    )
+                playField[startX]!![y] = playField[startX]!![y]!!.copy(isIntersection = true)
+                playField[endX]!![y] = playField[endX]!![y]!!.copy(isIntersection = true)
             } else {
                 val endY = (p.y + p.verticalLength - 1) * UnitScale
                 val x = p.x * UnitScale
 
-                for (y in (p.y + 1) * UnitScale..endY step UnitScale) {
-                    playField[x]!![y] = prepareTile(x, y, p.tunnel, food = playField[x]!![y]!!.food)
+                for (y in p.y * UnitScale..endY step UnitScale) {
+                    playField[x]!![y] = prepareTile(
+                        x,
+                        y,
+                        tunnel = (!p.tunnel || x != p.x * UnitScale && x != (p.x + p.verticalLength - 1) * UnitScale) && p.tunnel,
+                        food = playField[x]!![y]!!.food
+                    )
                 }
 
-                playField[x]!![startY] =
-                    prepareTile(
-                        x,
-                        startY,
-                        p.tunnel,
-                        isIntersection = true,
-                        playField[x]!![startY]!!.food
-                    )
-
-                playField[x]!![endY] =
-                    prepareTile(
-                        x,
-                        endY,
-                        p.tunnel,
-                        isIntersection = true,
-                        playField[x]!![endY]!!.food
-                    )
+                playField[x]!![startY] = playField[x]!![startY]!!.copy(isIntersection = true)
+                playField[x]!![endY] = playField[x]!![endY]!!.copy(isIntersection = true)
             }
         }
 

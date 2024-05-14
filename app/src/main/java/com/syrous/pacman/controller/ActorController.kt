@@ -3,10 +3,16 @@ package com.syrous.pacman.controller
 import com.syrous.pacman.GameState
 import com.syrous.pacman.model.Actor
 import com.syrous.pacman.model.ActorUpdateInfo
+import com.syrous.pacman.model.Blinky
+import com.syrous.pacman.model.Clyde
 import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.Food
+import com.syrous.pacman.model.Inky
+import com.syrous.pacman.model.Pacman
+import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
+import com.syrous.pacman.util.TUNNEL_POSITION
 import com.syrous.pacman.util.UnitScale
 import kotlin.math.floor
 import kotlin.math.round
@@ -37,7 +43,7 @@ abstract class ActorController(private val gameState: GameState) {
     fun getPlayFieldTile(tile: Pair<Int, Int>): Tile =
         playField[tile.first * UnitScale]!![tile.second * UnitScale]!!
 
-    fun getPlayFieldTilePos(tile: Pair<Int, Int>): Pair<Int, Int> =
+    private fun getPlayFieldTilePos(tile: Pair<Int, Int>): Pair<Int, Int> =
         Pair(tile.first * UnitScale, tile.second * UnitScale)
 
     fun step(updateActor: (ActorUpdateInfo) -> Unit) {
@@ -122,6 +128,7 @@ abstract class ActorController(private val gameState: GameState) {
     }
 
     private fun enteredTile(updateActor: (ActorUpdateInfo) -> Unit) {
+        wrapWhenInTunnel()
         handleObjectOnEncounter(actor)
         decideNextDirAfterEnteredTile(actor)
         var actorUpdateInfo = ActorUpdateInfo(
@@ -159,6 +166,87 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)
                 )
             }
+        }
+    }
+
+    private fun wrapWhenInTunnel() {
+        if (actor.position == Pair(
+                TUNNEL_POSITION[0].first * UnitScale.toFloat(),
+                TUNNEL_POSITION[0].second * UnitScale.toFloat()
+            )
+        ) {
+            actor = when (actor) {
+                is Blinky -> (actor as Blinky).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                    )
+                )
+
+                is Clyde -> (actor as Clyde).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                    )
+                )
+                is Inky -> (actor as Inky).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                    )
+                )
+                is Pinky -> (actor as Pinky).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                    )
+                )
+                is Pacman -> (actor as Pacman).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                    )
+                )
+            }
+        } else if (actor.position == Pair(
+                TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                TUNNEL_POSITION[1].second * UnitScale.toFloat()
+            )
+        ) {
+            actor = when (actor) {
+                is Blinky -> (actor as Blinky).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[0].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[0].second * UnitScale.toFloat()
+                    )
+                )
+
+                is Clyde -> (actor as Clyde).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[0].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[0].second * UnitScale.toFloat()
+                    )
+                )
+                is Inky -> (actor as Inky).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[0].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[0].second * UnitScale.toFloat()
+                    )
+                )
+                is Pinky -> (actor as Pinky).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[0].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[0].second * UnitScale.toFloat()
+                    )
+                )
+                is Pacman -> (actor as Pacman).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[0].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[0].second * UnitScale.toFloat()
+                    )
+                )
+            }
+
         }
     }
 }
