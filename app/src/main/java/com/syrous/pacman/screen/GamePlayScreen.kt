@@ -209,7 +209,7 @@ class GamePlay(
                     Image(painter = painterResource(id = R.drawable.pacman), contentDescription = "", modifier = Modifier.size(24.dp))
                 }
             }
-            Image(painter = painterResource(id = R.drawable.ghost_blinky), contentDescription = "", modifier = Modifier.size(24.dp))
+            Image(painter = painterResource(id = R.drawable.fruit_image), contentDescription = "", modifier = Modifier.size(24.dp))
         }
     }
 

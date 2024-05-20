@@ -14,6 +14,7 @@ import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.TUNNEL_POSITION
 import com.syrous.pacman.util.UnitScale
+import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
@@ -23,7 +24,7 @@ abstract class ActorController(private val gameState: GameState) {
     protected lateinit var actor: Actor
     protected lateinit var intervalSpeedTable: BooleanArray
     abstract fun move()
-    abstract fun adjustOverShootOnEnteringTile(playFieldTile: Tile, actor: Actor)
+    abstract fun adjustOverShootOnEnteringTile(tilePos: Pair<Int, Int>, actor: Actor)
     abstract fun reverseOnEnteringTile(actor: Actor)
     abstract fun handleObjectOnEncounter(actor: Actor)
     abstract fun decideNextDirAfterEnteredTile(actor: Actor)
@@ -103,7 +104,8 @@ abstract class ActorController(private val gameState: GameState) {
         tilePos: Pair<Int, Int>,
         updateActor: (ActorUpdateInfo) -> Unit
     ) {
-        adjustOverShootOnEnteringTile(getPlayFieldTile(tilePos), actor)
+
+        adjustOverShootOnEnteringTile(tilePos, actor)
 
         reverseOnEnteringTile(actor)
 
@@ -201,12 +203,18 @@ abstract class ActorController(private val gameState: GameState) {
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
-                is Pacman -> (actor as Pacman).copy(
-                    position = Pair(
-                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
-                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                is Pacman -> {
+
+                    Timber.d("actor => $actor and tunnel Pos -> ${TUNNEL_POSITION[1]}")
+                    val newActor = (actor as Pacman).copy(
+                        position = Pair(
+                            TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                            TUNNEL_POSITION[1].second * UnitScale.toFloat()
+                        )
                     )
-                )
+                    Timber.d("new Actor => $newActor")
+                    newActor
+                }
             }
         } else if (actor.position == Pair(
                 TUNNEL_POSITION[1].first * UnitScale.toFloat(),

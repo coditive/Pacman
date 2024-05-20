@@ -65,12 +65,17 @@ fun DrawScope.drawGhost(ghost: Ghost, ghostImage: ImageBitmap) {
 }
 
 
-
 fun DrawScope.drawCircleWithCutout(
     color: Color, radius: Float, animatedCutAngle: Float, pacman: Pacman
 ) {
     rotate(
-        degrees = pacman.lastActiveDir.angle, pivot = Offset(
+        degrees = when (pacman.direction) {
+            Directions.NONE -> {
+                pacman.lastActiveDir.angle
+            }
+
+            else -> pacman.direction.angle
+        }, pivot = Offset(
             pacman.screenPos.first, pacman.screenPos.second
         )
     ) {

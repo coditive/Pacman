@@ -274,7 +274,7 @@ val CAGE_ENTRANCE_TILE = Pair(14f, 12f)
 
 val TUNNEL_POSITION = listOf(
     Pair(1, 15),
-    Pair(29, 15)
+    Pair(28, 15)
 )
 
 
