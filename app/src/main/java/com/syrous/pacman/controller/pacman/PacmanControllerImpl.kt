@@ -122,10 +122,10 @@ class PacmanControllerImpl(
     }
 
     override fun adjustOverShootOnEnteringTile(
-        playFieldTile: Tile, actor: Actor
+        tilePos: Pair<Int, Int>, actor: Actor
     ) {
         if (actor is Pacman) {
-            if (playFieldTile.isPath.not()) {
+            if (getPlayFieldTile(tilePos).isPath.not()) {
                 val lastGoodTile = pacman.value.lastGoodTilePos
                 this.actor = actor.copy(
                     position = Pair(
