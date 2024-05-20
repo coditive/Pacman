@@ -2,7 +2,8 @@
 
 Welcome to Pacman! This is a simple implementation of the classic arcade game Pacman using Jetpack Compose and Android Framework.
 
-![Pacman Gameplay](https://github.com/coditive/Pacman/blob/aa5e4682247dd83ef074c941ca1c654fc64729ae/upload/trimmed_gif.gif)
+## GamePlay
+![Pacman Gameplay](https://github.com/coditive/Pacman/blob/cd5a20ec9b905b9d196ee840635c81b0e2aaa95f/upload/trimmed_gif.gif)
 
 ## Architecture
 
