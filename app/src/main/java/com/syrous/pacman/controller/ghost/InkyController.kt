@@ -1,6 +1,7 @@
 package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
+import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GamePlayMode
@@ -131,53 +132,28 @@ class InkyController(private val gameState: GameState) : GhostController(gameSta
     override fun move() {
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
-                followRoutine { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toInky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toInky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
+                followRoutine()
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toInky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toInky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                    }
-                }
-            } else {
-                step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toInky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toInky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
-                if (mode == GhostMode.EATEN) {
-                    step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toInky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toInky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
+                    followRoutine()
+                } else {
+                    step()
+                    if (mode == GhostMode.EATEN) {
+                        step()
                     }
                 }
             }
         }
+    }
+
+    override fun updateActor(actorUpdateInfo: ActorUpdateInfo) {
+        ghost.value = actorUpdateInfo.toInky(
+            scaleFactorX,
+            scaleFactorY,
+        )
+        actor = actorUpdateInfo.toInky(
+            scaleFactorX,
+            scaleFactorY,
+        )
     }
 
     override fun changeCurrentSpeed(speed: CurrentSpeed) {

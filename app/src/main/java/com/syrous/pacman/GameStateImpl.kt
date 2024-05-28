@@ -41,6 +41,7 @@ import com.syrous.pacman.util.playerSpeed
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import timber.log.Timber
 import kotlin.math.floor
 
 class GameStateImpl : GameState {
@@ -214,6 +215,7 @@ class GameStateImpl : GameState {
 
                 playField[startX]!![y] = playField[startX]!![y]!!.copy(isIntersection = true)
                 playField[endX]!![y] = playField[endX]!![y]!!.copy(isIntersection = true)
+                Timber.d("Printing Intersection -> ${Pair(startX, y)} & ${Pair(endX, y)}")
             } else {
                 val endY = (p.y + p.verticalLength - 1) * UnitScale
                 val x = p.x * UnitScale
@@ -229,6 +231,8 @@ class GameStateImpl : GameState {
 
                 playField[x]!![startY] = playField[x]!![startY]!!.copy(isIntersection = true)
                 playField[x]!![endY] = playField[x]!![endY]!!.copy(isIntersection = true)
+                Timber.d("Printing Intersection -> ${Pair(x, startY)} & ${Pair(x, endY)}")
+
             }
         }
 

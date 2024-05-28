@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -48,12 +47,10 @@ class MainActivity : ComponentActivity() {
             add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_inky).asImageBitmap())
             add(BitmapFactory.decodeResource(this@MainActivity.resources, R.drawable.ghost_clyde).asImageBitmap())
         }
-
-
+        loadScreens()
         setContent {
             PacmanTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    LoadScreens()
                     loadListeners()
                     val screen = viewModel.currentScreen.collectAsState().value
                     when (screen) {
@@ -66,11 +63,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    private fun LoadScreens() {
+    override fun onPause() {
+        super.onPause()
+        controller.pauseGame()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        controller.resumeGame()
+    }
+
+    private fun loadScreens() {
         gameStart = GameStart { action ->
             when (action) {
-                StartScreenAction.EndGame -> TODO()
+                StartScreenAction.EndGame -> controller.endGame()
                 StartScreenAction.StartGame -> controller.startGame()
             }
         }

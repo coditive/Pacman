@@ -1,6 +1,7 @@
 package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
+import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.Blinky
 import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
@@ -19,16 +20,16 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
 
     val ghost: MutableStateFlow<Blinky> = MutableStateFlow(
         Blinky(
-            position = Pair(0f, 0f),
-            tilePos = Pair(0, 0),
-            lastGoodTilePos = Pair(0, 0),
-            screenPos = Pair(0f, 0f),
+            position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
+            tilePos = Pair(15, 12),
+            lastGoodTilePos = Pair(15, 12),
+            screenPos = Pair(15f * UnitScale, 12f * UnitScale),
             lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
             physicalSpeed = 0f,
-            fullSpeed = 0f,
-            tunnelSpeed = 0f,
+            fullSpeed = ghostSpeed,
+            tunnelSpeed = ghostTunnelSpeed,
             speed = CurrentSpeed.NORMAL
         )
     )
@@ -106,55 +107,28 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
     override fun move() {
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
-                followRoutine { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toBlinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toBlinky(
-                        scaleFactorX,
-                        scaleFactorY,
-
-                        )
-                }
+                followRoutine()
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toBlinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toBlinky(
-                            scaleFactorX,
-                            scaleFactorY,
-
-                            )
-                    }
-                }
-            } else {
-                step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toBlinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toBlinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
-                if (mode == GhostMode.EATEN) {
-                    step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toBlinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toBlinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
+                    followRoutine()
+                } else {
+                    step()
+                    if (mode == GhostMode.EATEN) {
+                        step()
                     }
                 }
             }
         }
+    }
+
+    override fun updateActor(actorUpdateInfo: ActorUpdateInfo) {
+        ghost.value = actorUpdateInfo.toBlinky(
+            scaleFactorX,
+            scaleFactorY,
+        )
+        actor = actorUpdateInfo.toBlinky(
+            scaleFactorX,
+            scaleFactorY,
+        )
     }
 
     override fun changeCurrentSpeed(speed: CurrentSpeed) {

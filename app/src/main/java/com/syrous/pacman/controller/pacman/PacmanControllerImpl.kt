@@ -3,6 +3,7 @@ package com.syrous.pacman.controller.pacman
 import com.syrous.pacman.GameState
 import com.syrous.pacman.controller.ActorController
 import com.syrous.pacman.model.Actor
+import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GameInternalEvent
@@ -90,19 +91,21 @@ class PacmanControllerImpl(
                 handleDirectionChange(requestedChangeDir)
                 requestedChangeDir = Directions.NONE
             }
-            step { actorUpdateInfo ->
-                pacman.value = actorUpdateInfo.toPacman(
-                    scaleFactorX,
-                    scaleFactorY,
-                    (actor as Pacman).dotEatingSpeed
-                )
-                actor = actorUpdateInfo.toPacman(
-                    scaleFactorX,
-                    scaleFactorY,
-                    (actor as Pacman).dotEatingSpeed
-                )
-            }
+            step()
         }
+    }
+
+    override fun updateActor(actorUpdateInfo: ActorUpdateInfo) {
+        pacman.value = actorUpdateInfo.toPacman(
+            scaleFactorX,
+            scaleFactorY,
+            (actor as Pacman).dotEatingSpeed
+        )
+        actor = actorUpdateInfo.toPacman(
+            scaleFactorX,
+            scaleFactorY,
+            (actor as Pacman).dotEatingSpeed
+        )
     }
 
     override fun moveLeft() {
