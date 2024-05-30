@@ -188,30 +188,27 @@ abstract class ActorController(private val gameState: GameState) {
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
+
                 is Inky -> (actor as Inky).copy(
                     position = Pair(
                         TUNNEL_POSITION[1].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
+
                 is Pinky -> (actor as Pinky).copy(
                     position = Pair(
                         TUNNEL_POSITION[1].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
-                is Pacman -> {
 
-                    Timber.d("actor => $actor and tunnel Pos -> ${TUNNEL_POSITION[1]}")
-                    val newActor = (actor as Pacman).copy(
-                        position = Pair(
-                            TUNNEL_POSITION[1].first * UnitScale.toFloat(),
-                            TUNNEL_POSITION[1].second * UnitScale.toFloat()
-                        )
+                is Pacman -> (actor as Pacman).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
-                    Timber.d("new Actor => $newActor")
-                    newActor
-                }
+                )
             }
         } else if (actor.position == Pair(
                 TUNNEL_POSITION[1].first * UnitScale.toFloat(),
@@ -232,18 +229,21 @@ abstract class ActorController(private val gameState: GameState) {
                         TUNNEL_POSITION[0].second * UnitScale.toFloat()
                     )
                 )
+
                 is Inky -> (actor as Inky).copy(
                     position = Pair(
                         TUNNEL_POSITION[0].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[0].second * UnitScale.toFloat()
                     )
                 )
+
                 is Pinky -> (actor as Pinky).copy(
                     position = Pair(
                         TUNNEL_POSITION[0].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[0].second * UnitScale.toFloat()
                     )
                 )
+
                 is Pacman -> (actor as Pacman).copy(
                     position = Pair(
                         TUNNEL_POSITION[0].first * UnitScale.toFloat(),
