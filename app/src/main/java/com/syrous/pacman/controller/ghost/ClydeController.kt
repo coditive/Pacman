@@ -1,6 +1,7 @@
 package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
+import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.Clyde
 import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
@@ -113,55 +114,29 @@ class ClydeController(private val gameState: GameState) : GhostController(gameSt
     override fun move() {
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
-                followRoutine { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toClyde(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toClyde(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
+                followRoutine()
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toClyde(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toClyde(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                    }
+                    followRoutine()
                 }
             } else {
-                step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toClyde(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toClyde(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
+                step()
                 if (mode == GhostMode.EATEN) {
-                    step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toClyde(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toClyde(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                    }
+                    step()
                 }
             }
         }
     }
 
+    override fun updateActor(actorUpdateInfo: ActorUpdateInfo) {
+        ghost.value = actorUpdateInfo.toClyde(
+            scaleFactorX,
+            scaleFactorY,
+        )
+        actor = actorUpdateInfo.toClyde(
+            scaleFactorX,
+            scaleFactorY,
+        )
+    }
     override fun changeCurrentSpeed(speed: CurrentSpeed) {
         actor = ghost.value.copy(speed = speed)
         changeCurrentSpeed()

@@ -180,21 +180,6 @@ class GameStateImpl : GameState {
         }
     }
 
-    private fun prepareTile(
-        x: Int,
-        y: Int,
-        tunnel: Boolean,
-        isIntersection: Boolean = false,
-        food: Food
-    ): Tile {
-        return Tile(
-            isPath = true,
-            isTunnel = tunnel,
-            isIntersection = isIntersection,
-            food = if (food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
-        )
-    }
-
     private fun preparePaths() {
         for (p in PATHS) {
             val startX = p.x * UnitScale
@@ -204,11 +189,10 @@ class GameStateImpl : GameState {
                 val y = p.y * UnitScale
 
                 for (x in p.x * UnitScale until endX step UnitScale) {
-                    playField[x]!![y] = prepareTile(
-                        x,
-                        y,
-                        tunnel = (!p.tunnel || x != p.x * UnitScale && x != (p.x + p.horizontalLength - 1) * UnitScale) && p.tunnel,
-                        food = playField[x]!![y]!!.food
+                    playField[x]!![y] = playField[x]!![y]!!.copy(
+                        isPath = true,
+                        isTunnel = (!p.tunnel || x != p.x * UnitScale && x != (p.x + p.horizontalLength - 1) * UnitScale) && p.tunnel,
+                        food = if (playField[x]!![y]!!.food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
                     )
                 }
 
@@ -219,14 +203,12 @@ class GameStateImpl : GameState {
                 val x = p.x * UnitScale
 
                 for (y in p.y * UnitScale..endY step UnitScale) {
-                    playField[x]!![y] = prepareTile(
-                        x,
-                        y,
-                        tunnel = (!p.tunnel || x != p.x * UnitScale && x != (p.x + p.verticalLength - 1) * UnitScale) && p.tunnel,
-                        food = playField[x]!![y]!!.food
+                    playField[x]!![y] = playField[x]!![y]!!.copy(
+                        isPath = true,
+                        isTunnel = (!p.tunnel || x != p.x * UnitScale && x != (p.x + p.horizontalLength - 1) * UnitScale) && p.tunnel,
+                        food = if (playField[x]!![y]!!.food == Food.NONE) Food.PELLET else playField[x]!![y]!!.food
                     )
                 }
-
                 playField[x]!![startY] = playField[x]!![startY]!!.copy(isIntersection = true)
                 playField[x]!![endY] = playField[x]!![endY]!!.copy(isIntersection = true)
             }
@@ -243,6 +225,27 @@ class GameStateImpl : GameState {
                     playField[p.x * UnitScale]!![y] =
                         playField[p.x * UnitScale]!![y]!!.copy(food = Food.NONE)
                 }
+            }
+        }
+    }
+
+    private fun prepareAllowedDirections() {
+        for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
+            for (y in UnitScale..gameHeight * UnitScale step UnitScale) {
+                val allowedDir = mutableSetOf<Directions>()
+                if (playField[x]!![y - UnitScale]!!.isPath) {
+                    allowedDir.add(Directions.UP)
+                }
+                if (playField[x]!![y + UnitScale]!!.isPath) {
+                    allowedDir.add(Directions.DOWN)
+                }
+                if (playField[x - UnitScale]!![y]!!.isPath) {
+                    allowedDir.add(Directions.LEFT)
+                }
+                if (playField[x + UnitScale]!![y]!!.isPath) {
+                    allowedDir.add(Directions.RIGHT)
+                }
+                playField[x]!![y] = playField[x]!![y]!!.copy(allowedDir = allowedDir)
             }
         }
     }
@@ -343,26 +346,6 @@ class GameStateImpl : GameState {
         foodList.value = food
     }
 
-    private fun prepareAllowedDirections() {
-        for (x in UnitScale..gameWidth * UnitScale step UnitScale) {
-            for (y in UnitScale..gameHeight * UnitScale step UnitScale) {
-                val allowedDir = mutableSetOf<Directions>()
-                if (playField[x]!![y - UnitScale]!!.isPath) {
-                    allowedDir.add(Directions.UP)
-                }
-                if (playField[x]!![y + UnitScale]!!.isPath) {
-                    allowedDir.add(Directions.DOWN)
-                }
-                if (playField[x - UnitScale]!![y]!!.isPath) {
-                    allowedDir.add(Directions.LEFT)
-                }
-                if (playField[x + UnitScale]!![y]!!.isPath) {
-                    allowedDir.add(Directions.RIGHT)
-                }
-                playField[x]!![y] = playField[x]!![y]!!.copy(allowedDir = allowedDir)
-            }
-        }
-    }
 
     override suspend fun updatePositionAfterLoop() {
         pacmanController.move()

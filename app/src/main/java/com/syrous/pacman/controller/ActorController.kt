@@ -30,6 +30,7 @@ abstract class ActorController(private val gameState: GameState) {
     abstract fun decideNextDirAfterEnteredTile(actor: Actor)
     abstract fun haveFood(tilePos: Pair<Int, Int>)
     abstract fun changeCurrentSpeed(speed: CurrentSpeed)
+    abstract fun updateActor(actorUpdateInfo: ActorUpdateInfo)
     abstract fun changeCurrentSpeed()
 
     fun getOppositeDirection(directions: Directions): Directions =
@@ -47,7 +48,7 @@ abstract class ActorController(private val gameState: GameState) {
     private fun getPlayFieldTilePos(tile: Pair<Int, Int>): Pair<Int, Int> =
         Pair(tile.first * UnitScale, tile.second * UnitScale)
 
-    fun step(updateActor: (ActorUpdateInfo) -> Unit) {
+    fun step() {
         if (actor.direction == Directions.NONE || intervalSpeedTable[gameState.getIntervalTime()].not()) {
             return
         }
@@ -59,7 +60,6 @@ abstract class ActorController(private val gameState: GameState) {
         val pacX = pos.first + dir.move.first
         val pacY = pos.second + dir.move.second
         val newPos = Pair(pacX, pacY)
-
         updateActor(
             ActorUpdateInfo(
                 position = newPos,
@@ -88,11 +88,11 @@ abstract class ActorController(private val gameState: GameState) {
         )
         when {
             nextTile.first != tilePos.first || nextTile.second != tilePos.second -> {
-                enteringTile(nextTile, updateActor)
+                enteringTile(nextTile)
             }
 
             enteredTile == newPos -> {
-                enteredTile(updateActor)
+                enteredTile()
             }
         }
     }
@@ -101,18 +101,13 @@ abstract class ActorController(private val gameState: GameState) {
         playFieldTile.food != Food.NONE
 
     private fun enteringTile(
-        tilePos: Pair<Int, Int>,
-        updateActor: (ActorUpdateInfo) -> Unit
+        tilePos: Pair<Int, Int>
     ) {
-
         adjustOverShootOnEnteringTile(tilePos, actor)
-
         reverseOnEnteringTile(actor)
-
         if (canHaveFood(getPlayFieldTile(tilePos))) {
             haveFood(getPlayFieldTilePos(tilePos))
         }
-
         updateActor(
             ActorUpdateInfo(
                 position = actor.position,
@@ -129,7 +124,7 @@ abstract class ActorController(private val gameState: GameState) {
         )
     }
 
-    private fun enteredTile(updateActor: (ActorUpdateInfo) -> Unit) {
+    private fun enteredTile() {
         wrapWhenInTunnel()
         handleObjectOnEncounter(actor)
         decideNextDirAfterEnteredTile(actor)
@@ -153,6 +148,7 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actor.direction)
                 }
+                Timber.d("EnteredTile update to actor -> $actor")
                 updateActor(
                     actorUpdateInfo.copy(
                         direction = actorUpdateInfo.nextDir,
@@ -164,6 +160,7 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
                 }
+                Timber.d("EnteredTile update to actor -> $actor")
                 updateActor(
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)
                 )
@@ -191,30 +188,27 @@ abstract class ActorController(private val gameState: GameState) {
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
+
                 is Inky -> (actor as Inky).copy(
                     position = Pair(
                         TUNNEL_POSITION[1].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
+
                 is Pinky -> (actor as Pinky).copy(
                     position = Pair(
                         TUNNEL_POSITION[1].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
                 )
-                is Pacman -> {
 
-                    Timber.d("actor => $actor and tunnel Pos -> ${TUNNEL_POSITION[1]}")
-                    val newActor = (actor as Pacman).copy(
-                        position = Pair(
-                            TUNNEL_POSITION[1].first * UnitScale.toFloat(),
-                            TUNNEL_POSITION[1].second * UnitScale.toFloat()
-                        )
+                is Pacman -> (actor as Pacman).copy(
+                    position = Pair(
+                        TUNNEL_POSITION[1].first * UnitScale.toFloat(),
+                        TUNNEL_POSITION[1].second * UnitScale.toFloat()
                     )
-                    Timber.d("new Actor => $newActor")
-                    newActor
-                }
+                )
             }
         } else if (actor.position == Pair(
                 TUNNEL_POSITION[1].first * UnitScale.toFloat(),
@@ -235,18 +229,21 @@ abstract class ActorController(private val gameState: GameState) {
                         TUNNEL_POSITION[0].second * UnitScale.toFloat()
                     )
                 )
+
                 is Inky -> (actor as Inky).copy(
                     position = Pair(
                         TUNNEL_POSITION[0].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[0].second * UnitScale.toFloat()
                     )
                 )
+
                 is Pinky -> (actor as Pinky).copy(
                     position = Pair(
                         TUNNEL_POSITION[0].first * UnitScale.toFloat(),
                         TUNNEL_POSITION[0].second * UnitScale.toFloat()
                     )
                 )
+
                 is Pacman -> (actor as Pacman).copy(
                     position = Pair(
                         TUNNEL_POSITION[0].first * UnitScale.toFloat(),

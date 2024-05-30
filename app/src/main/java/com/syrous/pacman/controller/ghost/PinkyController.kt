@@ -1,6 +1,7 @@
 package com.syrous.pacman.controller.ghost
 
 import com.syrous.pacman.GameState
+import com.syrous.pacman.model.ActorUpdateInfo
 import com.syrous.pacman.model.CurrentSpeed
 import com.syrous.pacman.model.Directions
 import com.syrous.pacman.model.GamePlayMode
@@ -53,7 +54,8 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
         put(
             GhostMode.LEAVING_CAGE, listOf(
                 MoveInCage(14.5f, 15f, Directions.UP, 12f, LEAVING_SPEED),
-                MoveInCage(14.5f, 12f, Directions.LEFT, 14f, LEAVING_SPEED),            )
+                MoveInCage(14.5f, 12f, Directions.LEFT, 14f, LEAVING_SPEED),
+            )
         )
         put(
             GhostMode.ENTERING_CAGE, listOf(
@@ -117,53 +119,28 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
     override fun move() {
         if (gameState.getGamePlayMode() == GamePlayMode.ORDINARY_PLAYING || gameState.getGamePlayMode() == GamePlayMode.GHOST_DIED && (mode == GhostMode.EATEN || mode == GhostMode.ENTERING_CAGE)) {
             if (followingRoutine) {
-                followRoutine { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toPinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toPinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
+                followRoutine()
                 if (mode == GhostMode.ENTERING_CAGE) {
-                    followRoutine { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toPinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toPinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                    }
+                    followRoutine()
                 }
             } else {
-                step { actorUpdateInfo ->
-                    ghost.value = actorUpdateInfo.toPinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                    actor = actorUpdateInfo.toPinky(
-                        scaleFactorX,
-                        scaleFactorY,
-                    )
-                }
+                step()
                 if (mode == GhostMode.EATEN) {
-                    step { actorUpdateInfo ->
-                        ghost.value = actorUpdateInfo.toPinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                        actor = actorUpdateInfo.toPinky(
-                            scaleFactorX,
-                            scaleFactorY,
-                        )
-                    }
+                    step()
                 }
             }
         }
+    }
+
+    override fun updateActor(actorUpdateInfo: ActorUpdateInfo) {
+        ghost.value = actorUpdateInfo.toPinky(
+            scaleFactorX,
+            scaleFactorY,
+        )
+        actor = actorUpdateInfo.toPinky(
+            scaleFactorX,
+            scaleFactorY,
+        )
     }
 
     override fun changeCurrentSpeed(speed: CurrentSpeed) {
