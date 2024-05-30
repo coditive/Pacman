@@ -117,11 +117,11 @@ class ClydeController(private val gameState: GameState) : GhostController(gameSt
                 followRoutine()
                 if (mode == GhostMode.ENTERING_CAGE) {
                     followRoutine()
-                } else {
+                }
+            } else {
+                step()
+                if (mode == GhostMode.EATEN) {
                     step()
-                    if (mode == GhostMode.EATEN) {
-                        step()
-                    }
                 }
             }
         }

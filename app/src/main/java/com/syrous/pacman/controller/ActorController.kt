@@ -60,7 +60,6 @@ abstract class ActorController(private val gameState: GameState) {
         val pacX = pos.first + dir.move.first
         val pacY = pos.second + dir.move.second
         val newPos = Pair(pacX, pacY)
-
         updateActor(
             ActorUpdateInfo(
                 position = newPos,

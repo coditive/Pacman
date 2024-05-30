@@ -20,11 +20,10 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
 
     val ghost: MutableStateFlow<Blinky> = MutableStateFlow(
         Blinky(
-            position = Pair(15 * UnitScale.toFloat(), 12 * UnitScale.toFloat()),
-            tilePos = Pair(15, 12),
-            lastGoodTilePos = Pair(15, 12),
-            screenPos = Pair(15f * UnitScale, 12f * UnitScale),
-            lastActiveDir = Directions.RIGHT,
+            position = Pair(0f, 0f),
+            tilePos = Pair(0, 0),
+            lastGoodTilePos = Pair(0, 0),
+            screenPos = Pair(0f, 0f),  lastActiveDir = Directions.RIGHT,
             direction = Directions.RIGHT,
             nextDir = Directions.NONE,
             physicalSpeed = 0f,
@@ -110,11 +109,11 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
                 followRoutine()
                 if (mode == GhostMode.ENTERING_CAGE) {
                     followRoutine()
-                } else {
+                }
+            } else {
+                step()
+                if (mode == GhostMode.EATEN) {
                     step()
-                    if (mode == GhostMode.EATEN) {
-                        step()
-                    }
                 }
             }
         }
