@@ -26,6 +26,7 @@ interface GameState {
     val clyde: StateFlow<Clyde>
     val isPaused: StateFlow<Boolean>
     val gameEvent: SharedFlow<GameEvent>
+    var actorChangedTile: Boolean
 
     fun startGamePlay()
     fun updateScreenDimensions(width: Int, height: Int)
@@ -42,6 +43,8 @@ interface GameState {
     fun moveDown()
     fun moveLeft()
     fun moveRight()
+    fun actorMoved()
+    fun detectActorCollision()
     fun isGhostExitingCage(): Boolean
     fun setGhostExitingCage(ghostExitingCageNow: Boolean)
     fun getMainGhostMain(): GhostMode

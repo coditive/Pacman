@@ -98,6 +98,10 @@ class PinkyController(private val gameState: GameState) : GhostController(gameSt
         )
     }
 
+    override fun detectCollision(targetPos: Pair<Int, Int>): Boolean {
+        return targetPos == actor.tilePos
+    }
+
     override fun updateTargetPos() {
         if (mode != GhostMode.CHASING) {
             return

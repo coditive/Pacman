@@ -2,6 +2,7 @@ package com.syrous.pacman
 
 import com.syrous.pacman.controller.ghost.BlinkyController
 import com.syrous.pacman.controller.ghost.ClydeController
+import com.syrous.pacman.controller.ghost.GhostController
 import com.syrous.pacman.controller.ghost.InkyController
 import com.syrous.pacman.controller.ghost.PinkyController
 import com.syrous.pacman.controller.pacman.PacmanController
@@ -98,6 +99,8 @@ class GameStateImpl : GameState {
 
     override val isPaused = MutableStateFlow(false)
     override val gameEvent = MutableSharedFlow<GameEvent>()
+    override var actorChangedTile: Boolean = false
+
     override fun startGamePlay() {
         score.value = 0
         lives.value = 3
@@ -153,14 +156,12 @@ class GameStateImpl : GameState {
             if (wall.horizontalLength > 0) {
                 val x = wall.x + wall.horizontalLength - 1
                 hWallPointList[Pair(
-                    wall.x.toFloat() * scaleFactorX,
-                    wall.y.toFloat() * scaleFactorY
+                    wall.x.toFloat() * scaleFactorX, wall.y.toFloat() * scaleFactorY
                 )] = Pair(x.toFloat() * scaleFactorX, wall.y.toFloat() * scaleFactorY)
             } else {
                 val y = wall.y + wall.verticalLength - 1
                 vWallPointList[Pair(
-                    wall.x.toFloat() * scaleFactorX,
-                    wall.y.toFloat() * scaleFactorY
+                    wall.x.toFloat() * scaleFactorX, wall.y.toFloat() * scaleFactorY
                 )] = Pair(wall.x.toFloat() * scaleFactorX, y.toFloat() * scaleFactorY)
             }
         }
@@ -299,13 +300,7 @@ class GameStateImpl : GameState {
                 if (mode == FLEEING) {
                     ghost.setModeChangedWhileInCage(false)
                 }
-                if (ghost.getGhostMode() != GhostMode.EATEN &&
-                    ghost.getGhostMode() != GhostMode.IN_CAGE &&
-                    ghost.getGhostMode() != GhostMode.LEAVING_CAGE &&
-                    ghost.getGhostMode() != GhostMode.RE_LEAVING_CAGE &&
-                    ghost.getGhostMode() != GhostMode.ENTERING_CAGE ||
-                    justRestartGame
-                ) {
+                if (ghost.getGhostMode() != GhostMode.EATEN && ghost.getGhostMode() != GhostMode.IN_CAGE && ghost.getGhostMode() != GhostMode.LEAVING_CAGE && ghost.getGhostMode() != GhostMode.RE_LEAVING_CAGE && ghost.getGhostMode() != GhostMode.ENTERING_CAGE || justRestartGame) {
 
                     // If it is not immediately after restart the game (justRestartGame:false),
                     // a ghost reverse its direction
@@ -558,6 +553,36 @@ class GameStateImpl : GameState {
 
     override fun moveRight() {
         pacmanController.moveRight()
+    }
+
+    override fun actorMoved() {
+        actorChangedTile = true
+    }
+
+    override fun detectActorCollision() {
+        actorChangedTile = false
+        for (ghost in ghostControllerList) {
+            if (ghost.detectCollision(pacman.value.tilePos)) {
+                if (ghost.getGhostMode() == FLEEING) {
+                    ghostDies(ghost)
+                } else if (ghost.getGhostMode() != GhostMode.EATEN &&
+                    ghost.getGhostMode() != GhostMode.IN_CAGE &&
+                    ghost.getGhostMode() != GhostMode.LEAVING_CAGE &&
+                    ghost.getGhostMode() != GhostMode.RE_LEAVING_CAGE &&
+                    ghost.getGhostMode() != GhostMode.ENTERING_CAGE
+                ) {
+                    pacmanDies()
+                }
+            }
+        }
+    }
+
+    private fun ghostDies(ghost: GhostController) {
+        changeGamePlayMode(GamePlayMode.GHOST_DIED)
+    }
+
+    private fun pacmanDies() {
+        changeGamePlayMode(GamePlayMode.PLAYER_DYING)
     }
 
     override fun isGhostExitingCage(): Boolean {

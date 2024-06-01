@@ -14,7 +14,6 @@ import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.TUNNEL_POSITION
 import com.syrous.pacman.util.UnitScale
-import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
@@ -24,13 +23,13 @@ abstract class ActorController(private val gameState: GameState) {
     protected lateinit var actor: Actor
     protected lateinit var intervalSpeedTable: BooleanArray
     abstract fun move()
-    abstract fun adjustOverShootOnEnteringTile(tilePos: Pair<Int, Int>, actor: Actor)
-    abstract fun reverseOnEnteringTile(actor: Actor)
-    abstract fun handleObjectOnEncounter(actor: Actor)
-    abstract fun decideNextDirAfterEnteredTile(actor: Actor)
-    abstract fun haveFood(tilePos: Pair<Int, Int>)
-    abstract fun changeCurrentSpeed(speed: CurrentSpeed)
-    abstract fun updateActor(actorUpdateInfo: ActorUpdateInfo)
+    protected abstract fun adjustOverShootOnEnteringTile(tilePos: Pair<Int, Int>, actor: Actor)
+    protected abstract fun reverseOnEnteringTile(actor: Actor)
+    protected abstract fun handleObjectOnEncounter(actor: Actor)
+    protected abstract fun decideNextDirAfterEnteredTile(actor: Actor)
+    protected abstract fun haveFood(tilePos: Pair<Int, Int>)
+    protected abstract fun changeCurrentSpeed(speed: CurrentSpeed)
+    protected abstract fun updateActor(actorUpdateInfo: ActorUpdateInfo)
     abstract fun changeCurrentSpeed()
 
     fun getOppositeDirection(directions: Directions): Directions =
@@ -103,6 +102,7 @@ abstract class ActorController(private val gameState: GameState) {
     private fun enteringTile(
         tilePos: Pair<Int, Int>
     ) {
+        gameState.actorMoved()
         adjustOverShootOnEnteringTile(tilePos, actor)
         reverseOnEnteringTile(actor)
         if (canHaveFood(getPlayFieldTile(tilePos))) {
@@ -148,7 +148,6 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actor.direction)
                 }
-                Timber.d("EnteredTile update to actor -> $actor")
                 updateActor(
                     actorUpdateInfo.copy(
                         direction = actorUpdateInfo.nextDir,
@@ -160,7 +159,6 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
                 }
-                Timber.d("EnteredTile update to actor -> $actor")
                 updateActor(
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)
                 )

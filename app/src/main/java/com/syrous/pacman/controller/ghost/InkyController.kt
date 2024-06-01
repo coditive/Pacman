@@ -101,6 +101,10 @@ class InkyController(private val gameState: GameState) : GhostController(gameSta
 
     }
 
+    override fun detectCollision(targetPos: Pair<Int, Int>): Boolean {
+        return targetPos == actor.tilePos
+    }
+
     override fun updateTargetPos() {
         if (this.mode != GhostMode.CHASING) {
             return
