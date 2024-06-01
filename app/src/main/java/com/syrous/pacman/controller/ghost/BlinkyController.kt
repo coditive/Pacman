@@ -81,6 +81,10 @@ class BlinkyController(private val gameState: GameState) : GhostController(gameS
         )
     }
 
+    override fun detectCollision(targetPos: Pair<Int, Int>): Boolean {
+        return targetPos == actor.tilePos
+    }
+
     override fun getNormalSpeed(): Float {
         return if (mode == GhostMode.PATROLLING || mode == GhostMode.CHASING) gameState.getCruiseElroySpeed()
         else actor.fullSpeed

@@ -97,6 +97,10 @@ class ClydeController(private val gameState: GameState) : GhostController(gameSt
         )
     }
 
+    override fun detectCollision(targetPos: Pair<Int, Int>): Boolean {
+        return targetPos == actor.tilePos
+    }
+
     override fun updateTargetPos() {
         val pacman = gameState.pacman.value
         val distance = getEuclideanDistanceBetweenInt(pacman.tilePos, gameState.clyde.value.tilePos)
