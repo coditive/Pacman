@@ -14,7 +14,6 @@ import com.syrous.pacman.model.Pinky
 import com.syrous.pacman.model.Tile
 import com.syrous.pacman.util.TUNNEL_POSITION
 import com.syrous.pacman.util.UnitScale
-import timber.log.Timber
 import kotlin.math.floor
 import kotlin.math.round
 
@@ -148,7 +147,6 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actor.direction)
                 }
-                Timber.d("EnteredTile update to actor -> $actor")
                 updateActor(
                     actorUpdateInfo.copy(
                         direction = actorUpdateInfo.nextDir,
@@ -160,7 +158,6 @@ abstract class ActorController(private val gameState: GameState) {
                     actorUpdateInfo =
                         actorUpdateInfo.copy(lastActiveDir = actorUpdateInfo.direction)
                 }
-                Timber.d("EnteredTile update to actor -> $actor")
                 updateActor(
                     actorUpdateInfo.copy(direction = Directions.NONE, nextDir = Directions.NONE)
                 )
