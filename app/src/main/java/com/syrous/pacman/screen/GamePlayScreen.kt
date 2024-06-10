@@ -254,7 +254,7 @@ class GamePlay(
             Animatable(CutAngle)
         }
 
-        LaunchedEffect(key1 = pacman) {
+        LaunchedEffect(key1 = pacman.tilePos) {
             animatableCutAngle.animateTo(targetValue = CutAngle, animationSpec = keyframes {
                 CutAngle at 0 using LinearEasing
                 EatAngle at 80 using LinearEasing

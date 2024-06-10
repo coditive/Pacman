@@ -18,7 +18,6 @@ import com.syrous.pacman.util.CAGE_ENTRANCE_TILE
 import com.syrous.pacman.util.UnitScale
 import com.syrous.pacman.util.getEuclideanDistanceBetweenFloat
 import com.syrous.pacman.util.plus
-import timber.log.Timber
 
 abstract class GhostController(
     private val gameState: GameState
@@ -250,7 +249,6 @@ abstract class GhostController(
             currentTile.second + dir.move.second.toInt()
         )
         var destination = getPlayFieldTile(newTile)
-        Timber.d("tile => $newTile, desitnation -> $destination, ghost => $ghost")
         if (reversed && destination.isIntersection.not()) {
             destination = getPlayFieldTile(currentTile)
         }
@@ -280,16 +278,12 @@ abstract class GhostController(
                             nextDir = preferredDir
                         }
                     }
-
-                    Timber.d("nextDir decided -> $nextDir, ghost -> $ghost")
-
                     actor = when (ghost) {
                         is Blinky -> ghost.copy(nextDir = nextDir)
                         is Clyde -> ghost.copy(nextDir = nextDir)
                         is Inky -> ghost.copy(nextDir = nextDir)
                         is Pinky -> ghost.copy(nextDir = nextDir)
                     }
-                    Timber.d("nextDir after update -> $actor")
                 }
 
                 GhostMode.FLEEING -> {
