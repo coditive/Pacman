@@ -1,9 +1,9 @@
 # Pacman Game
 
-Welcome to Pacman! This is a simple implementation of the classic arcade game Pacman using Jetpack Compose and Android Framework.
+Welcome to Pacman! This is a simple implementation of the classic arcade game Pacman using Jetpack Compose, Kotlin and Android Framework.
 
 ## GamePlay
-![Pacman Gameplay](https://github.com/coditive/Pacman/blob/cd5a20ec9b905b9d196ee840635c81b0e2aaa95f/upload/trimmed_gif.gif)
+![Pacman Gameplay](https://github.com/coditive/Pacman/blob/8fa3ed94661609a9258d091758a893908046787e/upload/pacman.gif)
 
 ## Architecture
 
@@ -11,8 +11,8 @@ Welcome to Pacman! This is a simple implementation of the classic arcade game Pa
 
 ### Overview
 
-The Pacman game is built using the Model-View-Controller (MVC) architecture pattern along with Flow to handle state changes and deliver them to Compose screens.
-This architectural approach provides a clear separation of concerns, allowing for better organization and maintainability of the codebase. 
+The Pacman game is built using the Model-View-ViewModel (MVVM) architecture pattern along with Flow to handle state changes and deliver them to Compose screens.
+This architectural approach provides a clear separation of concerns, allowing for better organization and maintainability of the codebase.
 
 
 ### Components
@@ -29,7 +29,7 @@ This architectural approach provides a clear separation of concerns, allowing fo
 
 6. **User Interface**: Renders the game graphics and provides user controls for starting, pausing, and restarting the game.
 
-### Technologies Used
+### Libraries Used
 
 - Jetpack Compose
 - Timber
